@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useBrelloStore } from '@/store/brello-store';
 import { Opportunita, Cliente } from '@/types';
-import { Plus, DragHandleDots2Icon, TrendingUp, Users, Euro, Calendar, HelpCircle, Info, Target, CheckCircle, DollarSign } from 'lucide-react';
+import { Plus, GripVertical, TrendingUp, Users, Euro, Calendar, HelpCircle, Info, Target, CheckCircle, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface OpportunitaFormData {
@@ -411,7 +411,7 @@ export default function Pipeline() {
                             <div className="font-medium text-sm">{opp.oggetto}</div>
                             <div className="text-xs text-gray-600">{getClienteName(opp.cliente_id)}</div>
                           </div>
-                          <DragHandleDots2Icon className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
+                          <GripVertical className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
                         </div>
                         
                         <div className="flex items-center justify-between mb-2">
