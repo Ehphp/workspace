@@ -1,0 +1,240 @@
+sequenceDiagram
+    participant U as User (Sales Manager)
+    participant F as Frontend Next.js
+    participant A as API Gateway
+    participant AS as Auth Service
+    participant S as Fastify Server
+    participant CE as Calculation Engine
+    participant NS as Notification Service
+    participant RS as Realtime Service
+    participant D as PostgreSQL
+    participant R as Redis Cache
+    participant E as Email Service
+
+    Note over U,E: Complete Sales Pipeline Management Flow
+
+    %% Authentication Flow
+    U->>F: Login with credentials
+    F->>A: POST /api/v1/auth/login
+    A->>AS: Validate credentials
+    AS->>D: SELECT user WHERE email = ?
+    D-->>AS: Return user data
+    AS->>AS: Verify password hash
+    AS->>AS: Generate JWT token
+    AS-->>A: Return auth token + user info
+    A-->>F: Authentication response
+    F->>F: Store token in secure storage
+    F-->>U: Redirect to dashboard
+
+    %% Dashboard Loading with Caching
+    U->>F: Access dashboard
+    F->>A: GET /api/v1/dashboard (with JWT)
+    A->>AS: Validate JWT token
+    AS-->>A: Token valid + user permissions
+    A->>S: Forward dashboard request
+    S->>R: Check cache key "dashboard:user_id"
+    
+    alt Cache Hit
+        R-->>S: Return cached dashboard data
+        S-->>A: Cached dashboard response
+    else Cache Miss
+        S->>CE: Generate dashboard KPIs
+        CE->>D: Query current lotto status
+        D-->>CE: Lotto data + occupancy
+        CE->>D: Query pipeline opportunities
+        D-->>CE: Opportunities by fase
+        CE->>D: Query YTD financial metrics
+        D-->>CE: Revenue + costs data
+        CE->>CE: Calculate KPIs + margins
+        CE-->>S: Complete dashboard data
+        S->>R: Cache dashboard (TTL 5min)
+        S-->>A: Dashboard response
+    end
+    
+    A-->>F: Dashboard JSON data
+    F->>F: Render KPI cards + charts
+    F-->>U: Display dashboard
+
+    %% Real-time Pipeline Management
+    U->>F: Open Pipeline Kanban
+    F->>RS: Subscribe to pipeline updates
+    RS->>RS: Join socket room "pipeline:lotto_id"
+    F->>A: GET /api/v1/opportunita?lotto_id=xxx
+    A->>S: Get opportunities for lotto
+    S->>D: SELECT opportunita + JOIN cliente, lotto
+    D-->>S: Opportunities with client data
+    S-->>A: Opportunities list
+    A-->>F: Pipeline data
+    F->>F: Render Kanban board
+    F-->>U: Show drag & drop interface
+
+    %% Opportunity Stage Movement
+    U->>F: Drag opportunity from LEAD to QUALIFICA
+    F->>F: Optimistic UI update
+    F->>A: PUT /api/v1/opportunita/123/fase
+    A->>S: Update opportunity stage
+    S->>D: BEGIN TRANSACTION
+    S->>D: UPDATE opportunita SET fase='QUALIFICA'
+    S->>D: INSERT audit_log (stage change)
+    S->>D: COMMIT TRANSACTION
+    D-->>S: Update confirmed
+    
+    S->>CE: Recalculate lotto KPIs
+    CE->>D: Query updated pipeline metrics
+    D-->>CE: New conversion rates
+    CE-->>S: Updated KPI data
+    
+    S->>RS: Broadcast pipeline update
+    RS->>F: Emit pipeline:updated event
+    F->>F: Update UI with new data
+    
+    S->>R: Invalidate related caches
+    S-->>A: Success response
+    A-->>F: 200 OK confirmation
+
+    %% Preventivatore Real-time Calculation
+    U->>F: Open Preventivatore
+    F->>A: GET /api/v1/lotti/active
+    A->>S: Get available lotti
+    S->>D: SELECT lotti WHERE stato IN ('PREVENDITA','ATTIVO')
+    D-->>S: Available lotti + pricing
+    S-->>F: Lotti with base prices
+
+    U->>F: Select spazi + modify discount
+    Note over F: Real-time calculation on input change
+    F->>A: POST /api/v1/preventivatore/calcola
+    A->>S: Calculate margins
+    S->>CE: Process calculation request
+    CE->>D: Get lotto cost allocation
+    D-->>CE: Base costs per slot
+    CE->>CE: Calculate ricavo_totale
+    CE->>CE: Calculate costo_allocato  
+    CE->>CE: Calculate margine + margine_%
+    CE-->>S: Calculation results
+    S-->>A: Margin data
+    A-->>F: JSON response
+    F->>F: Update margin indicators
+    F-->>U: Show live margin calculation
+
+    %% Go/No-Go Automated Check
+    Note over NS: Daily scheduled job at 09:00
+    NS->>CE: Check all active lotti
+    CE->>D: SELECT lotti WHERE stato='PREVENDITA'
+    D-->>CE: Active lotti list
+    
+    loop For each lotto
+        CE->>D: Calculate current occupancy
+        D-->>CE: Spazi/stazioni venduti count
+        CE->>CE: Check giorni_rimanenti
+        CE->>CE: Evaluate go/no-go rules
+        
+        alt Occupancy < 70% AND giorni <= 14
+            CE->>D: INSERT notification (NO_GO_ALERT)
+            CE->>NS: Trigger critical alert
+            NS->>E: Send email to sales team
+            NS->>RS: Broadcast critical alert
+            RS->>F: Emit go-nogo:critical event
+            F->>F: Show red alert banner
+            F-->>U: Display "STAMPA BLOCCATA" warning
+            
+        else Occupancy < 70% AND giorni <= 30
+            CE->>D: INSERT notification (WARNING)
+            CE->>NS: Trigger warning notification
+            NS->>RS: Broadcast warning
+            RS->>F: Emit go-nogo:warning event
+            F->>F: Show yellow warning badge
+            F-->>U: Display occupancy warning
+        end
+        
+        CE->>D: UPDATE kpi_snapshots
+    end
+
+    %% Contract Generation and PDF Export
+    U->>F: Generate contract from opportunity
+    F->>A: POST /api/v1/contratti (from opportunity)
+    A->>S: Create contract
+    S->>D: BEGIN TRANSACTION
+    S->>D: INSERT contratto
+    S->>D: INSERT contratto_righe
+    S->>D: UPDATE spazi SET stato='VENDUTO'
+    S->>D: UPDATE opportunita SET fase='CHIUSURA'
+    S->>D: COMMIT TRANSACTION
+    D-->>S: Contract created
+    
+    S->>CE: Recalculate lotto metrics
+    CE->>D: Query updated occupancy
+    D-->>CE: New occupancy percentage
+    CE-->>S: Updated KPIs
+    
+    S->>RS: Broadcast occupancy update
+    RS->>F: Emit occupancy:updated event
+    F->>F: Update dashboard counters
+    
+    S-->>A: Contract created response
+    A-->>F: Contract ID + data
+    
+    U->>F: Generate PDF contract
+    F->>A: GET /api/v1/contratti/123/pdf
+    A->>S: Generate PDF request
+    S->>D: SELECT contratto + JOIN cliente, lotto, righe
+    D-->>S: Complete contract data
+    S->>S: Generate PDF with template
+    S-->>A: PDF buffer
+    A-->>F: PDF download response
+    F-->>U: Download PDF file
+
+    %% Scenario Planning Simulation
+    U->>F: Access Scenario Planner
+    F->>A: GET /api/v1/scenari/base-data
+    A->>S: Get baseline metrics
+    S->>D: Query YTD performance
+    D-->>S: Current metrics
+    S-->>F: Baseline scenario data
+
+    U->>F: Adjust scenario sliders
+    Note over F: Real-time scenario calculation
+    F->>A: POST /api/v1/scenari/simula
+    A->>S: Simulate scenario
+    S->>CE: Calculate scenario impact
+    CE->>CE: Apply occupancy_factor
+    CE->>CE: Apply price_factor  
+    CE->>CE: Apply cost_factor
+    CE->>CE: Calculate new margins
+    CE->>CE: Calculate break_even_impact
+    CE-->>S: Scenario results
+    S-->>A: Scenario comparison
+    A-->>F: Base/Best/Worst data
+    F->>F: Update comparison charts
+    F-->>U: Show scenario impact
+
+    %% Cash Flow Management
+    U->>F: Access Costi & Cassa
+    F->>A: GET /api/v1/movimenti
+    A->>S: Get cash movements
+    S->>D: SELECT movimenti_cassa + JOIN contratti
+    D-->>S: Payment schedule + actual
+    S-->>A: Cash flow data
+    A-->>F: Movements with status
+    F->>F: Render cash flow chart
+    F-->>U: Display payment timeline
+
+    %% Payment Reminder Automation
+    Note over NS: Daily check for overdue payments
+    NS->>D: SELECT movimenti WHERE data < NOW() AND stato='PREVISTO'
+    D-->>NS: Overdue payments
+    
+    loop For each overdue payment
+        NS->>E: Send payment reminder email
+        NS->>D: INSERT notification (PAYMENT_REMINDER)
+        NS->>RS: Broadcast payment alert
+        RS->>F: Emit payment:overdue event
+        F->>F: Show overdue badge
+        F-->>U: Display payment reminder
+    end
+
+    %% System Performance Monitoring
+    Note over S: Continuous performance tracking
+    S->>S: Log request metrics
+    S->>S: Track calculation duration
+    S->>S: Monitor error rates
+    S->>S: Update Prometheus metrics

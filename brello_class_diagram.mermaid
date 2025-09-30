@@ -1,0 +1,341 @@
+classDiagram
+    class User {
+        +UUID id
+        +String email
+        +String password_hash
+        +UserRole role
+        +String full_name
+        +Boolean is_active
+        +DateTime last_login
+        +DateTime created_at
+        +DateTime updated_at
+        +authenticate(password: String) Boolean
+        +hasPermission(permission: String) Boolean
+        +getAssignedOpportunities() Opportunita[]
+    }
+
+    class Cliente {
+        +UUID id
+        +String ragione_sociale
+        +String piva_codfisc
+        +ClienteCategoria categoria
+        +String email
+        +String telefono
+        +String indirizzo
+        +String referente
+        +String note
+        +DateTime created_at
+        +DateTime updated_at
+        +getOpportunities() Opportunita[]
+        +getContratti() Contratto[]
+        +calculateTotalRevenue() Decimal
+        +getSegmentMetrics() SegmentMetrics
+    }
+
+    class Lotto {
+        +UUID id
+        +String codice_lotto
+        +String citta
+        +Date periodo_start
+        +Date periodo_end
+        +Integer inventario_spazi
+        +Integer stazioni_tot
+        +LottoStato stato
+        +Decimal soglia_go_nogo
+        +Decimal target_ricavo
+        +DateTime created_at
+        +DateTime updated_at
+        +calculateOccupancy() OccupancyMetrics
+        +calculateRevenue() Decimal
+        +checkGoNoGoStatus() GoNoGoStatus
+        +getAvailableSpazi() Spazio[]
+        +getAvailableStazioni() SponsorshipStazione[]
+    }
+
+    class Spazio {
+        +UUID id
+        +UUID lotto_id
+        +SpazioTipo tipo
+        +Decimal prezzo_listino
+        +Decimal sconto_perc
+        +Decimal prezzo_netto
+        +SpazioStato stato
+        +UUID cliente_id
+        +UUID contratto_id
+        +DateTime created_at
+        +DateTime updated_at
+        +calculateNetPrice() Decimal
+        +isAvailable() Boolean
+        +reserve(cliente: Cliente) Boolean
+        +sell(contratto: Contratto) Boolean
+    }
+
+    class SponsorshipStazione {
+        +UUID id
+        +UUID lotto_id
+        +Integer numero_stazione
+        +Decimal prezzo_listino_lotto
+        +Decimal sconto_perc
+        +Decimal prezzo_netto
+        +StazioneStato stato
+        +UUID cliente_id
+        +UUID contratto_id
+        +DateTime created_at
+        +DateTime updated_at
+        +calculateNetPrice() Decimal
+        +isAvailable() Boolean
+        +reserve(cliente: Cliente) Boolean
+        +sell(contratto: Contratto) Boolean
+    }
+
+    class Opportunita {
+        +UUID id
+        +UUID cliente_id
+        +UUID lotto_id
+        +String oggetto
+        +OpportunitaTipo tipo
+        +Decimal valore_previsto
+        +OpportunitaFase fase
+        +Integer probabilita_perc
+        +Date data_chiusura_prevista
+        +String note
+        +UUID assigned_to
+        +DateTime created_at
+        +DateTime updated_at
+        +moveToNextStage() Boolean
+        +calculateWeightedValue() Decimal
+        +convertToContract() Contratto
+        +updateProbability(newProb: Integer) Boolean
+    }
+
+    class Contratto {
+        +UUID id
+        +String numero_contratto
+        +UUID cliente_id
+        +UUID lotto_id
+        +Decimal ricavo_totale
+        +String termini_pagamento
+        +Date[] date_incasso_previste
+        +ContrattoStato stato
+        +String pdf_path
+        +UUID created_by
+        +DateTime created_at
+        +DateTime updated_at
+        +addRiga(riga: ContrattoRiga) Boolean
+        +calculateTotal() Decimal
+        +generatePDF() String
+        +markAsSigned() Boolean
+        +createPaymentSchedule() MovimentoCassa[]
+    }
+
+    class ContrattoRiga {
+        +UUID id
+        +UUID contratto_id
+        +RigaTipo tipo
+        +UUID spazio_id
+        +UUID stazione_id
+        +Integer quantita
+        +Decimal prezzo_unitario
+        +Decimal sconto_perc
+        +Decimal totale_riga
+        +calculateLineTotal() Decimal
+        +validateQuantity() Boolean
+    }
+
+    class CostItem {
+        +UUID id
+        +UUID lotto_id
+        +CostCategoria categoria
+        +String descrizione
+        +Decimal importo
+        +CostCadenza cadenza
+        +Date data_competenza
+        +Boolean is_variabile
+        +DateTime created_at
+        +DateTime updated_at
+        +allocateToLotto(lotto: Lotto) Decimal
+        +calculateAnnualCost() Decimal
+        +isApplicableToLotto(lotto: Lotto) Boolean
+    }
+
+    class MovimentoCassa {
+        +UUID id
+        +Date data
+        +MovimentoTipo tipo
+        +Decimal importo
+        +String cliente_fornitore
+        +UUID riferimento_contratto_id
+        +UUID riferimento_costo_id
+        +MovimentoStato stato
+        +String note
+        +DateTime created_at
+        +DateTime updated_at
+        +markAsCompleted() Boolean
+        +calculateCashFlow(startDate: Date, endDate: Date) Decimal
+        +generateReminder() Notification
+    }
+
+    class KPISnapshot {
+        +UUID id
+        +UUID lotto_id
+        +Date data_snapshot
+        +Decimal occupancy_spazi_perc
+        +Decimal occupancy_stazioni_perc
+        +Decimal ricavo_lotto
+        +Decimal costo_lotto
+        +Decimal margine_lotto
+        +Decimal margine_perc
+        +Decimal lead_to_close_perc
+        +JSON cac_per_segmento
+        +DateTime created_at
+        +generateSnapshot(lotto: Lotto) KPISnapshot
+        +compareWithPrevious() KPIComparison
+    }
+
+    class CalculationEngine {
+        <<service>>
+        +calculateLottoRevenue(lotto_id: UUID) Decimal
+        +calculateOccupancy(lotto_id: UUID) OccupancyMetrics
+        +calculateMargin(lotto_id: UUID) MarginMetrics
+        +calculateCostAllocation(lotto_id: UUID) Decimal
+        +verifyGoNoGo(lotto_id: UUID) GoNoGoStatus
+        +simulateScenario(params: ScenarioParams) ScenarioResult
+        +calculateBreakEven() BreakEvenMetrics
+        +generatePreventivo(params: PreventivoParams) PreventivoResult
+    }
+
+    class NotificationService {
+        <<service>>
+        +sendGoNoGoAlert(lotto: Lotto, status: GoNoGoStatus) Boolean
+        +sendPaymentReminder(movimento: MovimentoCassa) Boolean
+        +sendRenewalOpportunity(cliente: Cliente) Boolean
+        +createInAppNotification(user: User, message: String) Notification
+        +broadcastRealtimeUpdate(channel: String, data: Object) Boolean
+    }
+
+    class RealtimeService {
+        <<service>>
+        +broadcastKPIUpdate(lotto_id: UUID, kpi: KPISnapshot) Boolean
+        +broadcastPipelineUpdate(lotto_id: UUID, opportunita: Opportunita) Boolean
+        +broadcastGoNoGoAlert(lotto_id: UUID, status: GoNoGoStatus) Boolean
+        +subscribeToUpdates(user: User, channels: String[]) Boolean
+    }
+
+    class PDFService {
+        <<service>>
+        +generateContrattoPDF(contratto: Contratto) Buffer
+        +generateOffertaPDF(preventivo: PreventivoResult) Buffer
+        +generateReportPDF(data: ReportData) Buffer
+        +savePDFToStorage(buffer: Buffer, filename: String) String
+    }
+
+    class AuthService {
+        <<service>>
+        +authenticate(email: String, password: String) AuthResult
+        +generateJWT(user: User) String
+        +validateJWT(token: String) User
+        +checkPermission(user: User, resource: String, action: String) Boolean
+        +refreshToken(refreshToken: String) AuthResult
+    }
+
+    %% Relationships
+    User ||--o{ Opportunita : assigns
+    Cliente ||--o{ Opportunita : creates
+    Cliente ||--o{ Contratto : signs
+    Cliente ||--o{ Spazio : rents
+    Cliente ||--o{ SponsorshipStazione : sponsors
+
+    Lotto ||--o{ Spazio : contains
+    Lotto ||--o{ SponsorshipStazione : contains
+    Lotto ||--o{ Opportunita : targets
+    Lotto ||--o{ Contratto : generates
+    Lotto ||--o{ KPISnapshot : tracks
+    Lotto ||--o{ CostItem : allocates
+
+    Contratto ||--o{ ContrattoRiga : contains
+    Contratto ||--o{ MovimentoCassa : generates
+
+    Spazio }o--|| ContrattoRiga : references
+    SponsorshipStazione }o--|| ContrattoRiga : references
+
+    CostItem ||--o{ MovimentoCassa : creates
+
+    %% Enums
+    class UserRole {
+        <<enumeration>>
+        ADMIN
+        SALES
+        FINANCE
+        VIEWER
+    }
+
+    class ClienteCategoria {
+        <<enumeration>>
+        PMI_LOCALE
+        PMI_REGIONALE
+        PMI_NAZIONALE
+        ISTITUZIONALE
+    }
+
+    class LottoStato {
+        <<enumeration>>
+        PREVENDITA
+        ATTIVO
+        CHIUSO
+    }
+
+    class SpazioTipo {
+        <<enumeration>>
+        STANDARD
+        PLUS
+        PREMIUM
+    }
+
+    class SpazioStato {
+        <<enumeration>>
+        LIBERO
+        OPZIONATO
+        VENDUTO
+        INVENDUTO
+    }
+
+    class OpportunitaFase {
+        <<enumeration>>
+        LEAD
+        QUALIFICA
+        OFFERTA
+        CHIUSURA
+    }
+
+    class ContrattoStato {
+        <<enumeration>>
+        BOZZA
+        INVIATO
+        FIRMATO
+        INCASSATO
+    }
+
+    %% Value Objects
+    class OccupancyMetrics {
+        +Decimal spazi_perc
+        +Decimal stazioni_perc
+        +Integer spazi_venduti
+        +Integer stazioni_vendute
+    }
+
+    class MarginMetrics {
+        +Decimal margine_assoluto
+        +Decimal margine_percentuale
+        +Decimal ricavo_totale
+        +Decimal costo_totale
+    }
+
+    class GoNoGoStatus {
+        +UUID lotto_id
+        +Decimal occupancy_attuale
+        +Decimal soglia_richiesta
+        +Integer giorni_rimanenti
+        +GoNoGoState status
+        +Boolean blocco_stampa
+        +Boolean alert_inviato
+    }

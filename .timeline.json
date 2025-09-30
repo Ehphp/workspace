@@ -1,0 +1,105 @@
+{
+  "timeline_index": 44,
+  "planner": {
+    "Team Leader": {
+      "1": {
+        "task_id": "1",
+        "dependent_task_ids": [],
+        "instruction": "Analizza il business plan caricato (/workspace/uploads/Business Plan – Brellò Umbrella Sharing (Pilota Alatri).pdf) e crea un PRD dettagliato per l'app web Brellò Sales & Finance Cockpit. L'app deve includere:\n\nFUNZIONALITÀ PRINCIPALI:\n- Tracciamento pipeline vendite per lotto e tipologia spazio\n- Preventivatore con calcolo margini in tempo reale\n- Proiezioni ricavi/costi/cassa con scenari (Base/Best/Worst)\n- Sistema go/no-go per stampa lotto (soglia ≥70% spazi venduti)\n- Gestione variabili finanziarie\n\nMODELLO DATI:\n- Cliente (ragione_sociale, PIVA, categoria, contatti)\n- Lotto (codice, città, periodo 3 mesi, inventario 18 spazi + 10 stazioni)\n- Spazio (tipo Standard/Plus/Premium, prezzi €900/€1100/€1500)\n- SponsorshipStazione (€300/mese = €900/lotto)\n- Opportunità CRM, Contratti, CostItem, MovimentoCassa, KPI Snapshot\n\nPAGINE UI:\n- Dashboard (card lotto corrente, funnel vendite, margine YTD)\n- Pipeline Kanban (drag&drop opportunità)\n- Preventivatore (configurazione proposta, margine live)\n- Calendario Lotti (vista trimestri Q1-Q4)\n- Costi & Cassa (movimenti, grafico saldo)\n- Scenario Planner (slider occupancy/prezzi/costi)\n- Report (per cliente/segmento, export CSV/PDF)\n\nCALCOLI:\n- Ricavo_lotto, Occupancy %, Margine %, Break-even annuo\n- Costi annui base €46.200, target margine €11.7k\n- Allocazione costi su 3 lotti/anno\n\nAUTOMAZIONI:\n- Alert go/no-go a T-14 giorni\n- Solleciti incassi\n- Rinnovi automatici clienti\n\nRUOLI: Admin, Sales, Finance, Viewer\n\nSalva il PRD in /workspace/brello_prd.md",
+        "task_type": "general",
+        "code": "",
+        "result": "",
+        "is_success": false,
+        "is_finished": true,
+        "assignee": "Emma",
+        "start_at": 1759220907.591464,
+        "end_at": 1759221164.0159569
+      },
+      "current_task_id": "3",
+      "2": {
+        "task_id": "2",
+        "dependent_task_ids": [
+          "1"
+        ],
+        "instruction": "Progetta l'architettura software per l'app Brellò Sales & Finance Cockpit basandoti sul PRD creato da Emma (/workspace/brello_prd.md). \n\nL'architettura deve supportare:\n- Frontend responsive (desktop + mobile)\n- Backend con modello dati complesso (8 entità principali)\n- Calcoli finanziari in tempo reale\n- Sistema di autorizzazioni multi-ruolo\n- Dashboard con KPI e grafici\n- Export PDF/CSV\n- Notifiche e automazioni\n\nConsidera tecnologie: React/Next.js frontend, database relazionale, API REST.\nSalva il design in /workspace/brello_architecture.md",
+        "task_type": "general",
+        "code": "",
+        "result": "",
+        "is_success": false,
+        "is_finished": true,
+        "assignee": "Bob",
+        "start_at": 1759221164.0159924,
+        "end_at": 1759221859.2431662
+      },
+      "3": {
+        "task_id": "3",
+        "dependent_task_ids": [
+          "2"
+        ],
+        "instruction": "Sviluppa l'app web completa Brellò Sales & Finance Cockpit utilizzando Shadcn-ui, TypeScript e Tailwind CSS, basandoti sul PRD (/workspace/brello_prd.md) e sull'architettura (/workspace/brello_architecture.md).\n\nIMPLEMENTA TUTTE LE FUNZIONALITÀ:\n1. Dashboard con card lotto corrente, occupancy %, ricavo vs target €19.3k, semaforo go/no-go, funnel vendite, margine YTD\n2. Pipeline Kanban con drag&drop opportunità per fase\n3. Preventivatore interattivo con calcolo margini live\n4. Calendario lotti vista trimestri con gestione inventario\n5. Gestione costi & cassa con movimenti e grafici\n6. Scenario Planner con slider e confronti Base/Best/Worst\n7. Report con filtri ed export\n8. Sistema login con ruoli (Admin/Sales/Finance/Viewer)\n\nDATI PRECARICATI:\n- Lotto 2025-Q4-AL con 18 spazi (6 Standard, 8 Plus, 2 Premium, 2 invenduti)\n- 10 stazioni sponsorship (7 vendute)\n- Costi annui €46.200\n- Listino prezzi: Standard €900, Plus €1100, Premium €1500, Sponsorship €900/lotto\n\nCALCOLI IMPLEMENTATI:\n- Ricavo_lotto, Occupancy %, Margine %, Break-even\n- Allocazione costi su 3 lotti/anno\n- Soglia go/no-go 70% spazi venduti\n\nUsa localStorage per persistenza dati. Interfaccia responsive con colori semaforo e indicatori chiari.",
+        "task_type": "general",
+        "code": "",
+        "result": "",
+        "is_success": false,
+        "is_finished": false,
+        "assignee": "Alex",
+        "start_at": 1759221859.243226
+      }
+    }
+  },
+  "gallery_last_file": {},
+  "timeline_status": {
+    "1": 1,
+    "2": 1,
+    "3": 1,
+    "4": 1,
+    "5": 1,
+    "6": 1,
+    "7": 1,
+    "8": 1,
+    "9": 1,
+    "10": 1,
+    "11": 1,
+    "12": 1,
+    "13": 1,
+    "14": 1,
+    "15": 1,
+    "16": 1,
+    "17": 1,
+    "18": 1,
+    "19": 1,
+    "20": 1,
+    "21": 1,
+    "22": 1,
+    "23": 1,
+    "24": 1,
+    "25": 1,
+    "26": 1,
+    "27": 1,
+    "28": 1,
+    "29": 1,
+    "30": 1,
+    "31": 1,
+    "32": 1,
+    "33": 1,
+    "34": 0,
+    "35": 1,
+    "36": 1,
+    "37": 1,
+    "38": 1,
+    "39": 1,
+    "40": 1,
+    "41": 1,
+    "42": 1,
+    "43": 1,
+    "44": 1
+  },
+  "preview_servers": {},
+  "preview_server": {
+    "project_dir": "/workspace/shadcn-ui",
+    "status": "initializing",
+    "config_path": ".mgx/config.yaml",
+    "timeline_index": 12
+  },
+  "last_build_failed": false
+}
