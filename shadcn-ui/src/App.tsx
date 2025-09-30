@@ -3,7 +3,6 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useBrelloStore } from '@/store/brello-store';
-import { LoginForm } from '@/components/auth/LoginForm';
 import { Layout } from '@/components/layout/Layout';
 
 // Import all pages
@@ -18,7 +17,7 @@ import Report from '@/pages/Report';
 const queryClient = new QueryClient();
 
 const App = () => {
-  const { isAuthenticated, initializeData } = useBrelloStore();
+  const { initializeData } = useBrelloStore();
   const [currentPage, setCurrentPage] = useState('dashboard');
   
   useEffect(() => {
@@ -36,27 +35,20 @@ const App = () => {
         return <Preventivatore />;
       case 'lotti':
         return <Lotti />;
+      case 'clienti':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Gestione Clienti</h1><p className="text-gray-600">Funzionalità in sviluppo</p></div>;
       case 'cassa':
         return <Cassa />;
       case 'scenari':
         return <Scenari />;
       case 'report':
         return <Report />;
+      case 'settings':
+        return <div className="p-6"><h1 className="text-2xl font-bold">Impostazioni</h1><p className="text-gray-600">Configurazioni sistema</p></div>;
       default:
         return <Dashboard />;
     }
   };
-  
-  if (!isAuthenticated) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <LoginForm />
-        </TooltipProvider>
-      </QueryClientProvider>
-    );
-  }
   
   return (
     <QueryClientProvider client={queryClient}>

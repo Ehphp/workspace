@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
-  User,
   Cliente,
   Lotto,
   Spazio,
@@ -18,10 +17,6 @@ import type {
 } from '@/types';
 
 interface BrelloState {
-  // Auth
-  currentUser: User | null;
-  isAuthenticated: boolean;
-  
   // Core Data
   clienti: Cliente[];
   lotti: Lotto[];
@@ -38,8 +33,6 @@ interface BrelloState {
   dashboardData: DashboardData | null;
   
   // Actions
-  login: (email: string, password: string) => Promise<boolean>;
-  logout: () => void;
   setCurrentLotto: (lotto: Lotto) => void;
   
   // CRUD Operations
@@ -61,11 +54,25 @@ interface BrelloState {
   
   // Business Logic
   calculateDashboardData: () => DashboardData | null;
-  calculatePreventivatoreResult: (request: any) => PreventivatoreResult;
+  calculatePreventivatoreResult: (request: PreventivatoreRequest) => PreventivatoreResult;
   calculateScenario: (params: ScenarioParams, nome: string) => ScenarioResult;
   
   // Data Initialization
   initializeData: () => void;
+}
+
+interface PreventivatoreRequest {
+  cliente_id: string;
+  lotto_id: string;
+  spazi: Array<{
+    tipo: 'STANDARD' | 'PLUS' | 'PREMIUM';
+    quantita: number;
+    sconto_perc?: number;
+  }>;
+  stazioni: Array<{
+    numero_stazione: number;
+    sconto_perc?: number;
+  }>;
 }
 
 // Sample data generation
@@ -367,8 +374,6 @@ export const useBrelloStore = create<BrelloState>()(
   persist(
     (set, get) => ({
       // Initial state
-      currentUser: null,
-      isAuthenticated: false,
       clienti: [],
       lotti: [],
       spazi: [],
@@ -380,28 +385,6 @@ export const useBrelloStore = create<BrelloState>()(
       kpi_snapshots: [],
       currentLotto: null,
       dashboardData: null,
-      
-      // Auth actions
-      login: async (email: string, password: string) => {
-        // Simple demo authentication
-        const users: User[] = [
-          { id: '1', email: 'admin@brello.it', nome: 'Admin', cognome: 'User', ruolo: 'admin', attivo: true },
-          { id: '2', email: 'sales@brello.it', nome: 'Sales', cognome: 'Manager', ruolo: 'sales', attivo: true },
-          { id: '3', email: 'finance@brello.it', nome: 'Finance', cognome: 'Controller', ruolo: 'finance', attivo: true },
-          { id: '4', email: 'viewer@brello.it', nome: 'View', cognome: 'Only', ruolo: 'viewer', attivo: true }
-        ];
-        
-        const user = users.find(u => u.email === email);
-        if (user && password === 'demo123') {
-          set({ currentUser: user, isAuthenticated: true });
-          return true;
-        }
-        return false;
-      },
-      
-      logout: () => {
-        set({ currentUser: null, isAuthenticated: false });
-      },
       
       setCurrentLotto: (lotto: Lotto) => {
         set({ currentLotto: lotto });
@@ -578,7 +561,7 @@ export const useBrelloStore = create<BrelloState>()(
         const costoLottoAllocato = state.costi.reduce((sum, c) => sum + c.importo, 0) / 3; // Diviso per 3 lotti/anno
         
         let ricavo_totale = 0;
-        const dettaglio_spazi = request.spazi.map((spazio: any) => {
+        const dettaglio_spazi = request.spazi.map((spazio) => {
           const prezzo_base = spazio.tipo === 'STANDARD' ? 900 : spazio.tipo === 'PLUS' ? 1100 : 1500;
           const sconto = spazio.sconto_perc || 0;
           const prezzo_unitario = prezzo_base * (1 - sconto / 100);
@@ -594,7 +577,7 @@ export const useBrelloStore = create<BrelloState>()(
           };
         });
         
-        const dettaglio_stazioni = request.stazioni.map((stazione: any) => {
+        const dettaglio_stazioni = request.stazioni.map((stazione) => {
           const prezzo_base = 900;
           const sconto = stazione.sconto_perc || 0;
           const prezzo_unitario = prezzo_base * (1 - sconto / 100);
@@ -682,8 +665,6 @@ export const useBrelloStore = create<BrelloState>()(
     {
       name: 'brello-storage',
       partialize: (state) => ({
-        currentUser: state.currentUser,
-        isAuthenticated: state.isAuthenticated,
         clienti: state.clienti,
         lotti: state.lotti,
         spazi: state.spazi,

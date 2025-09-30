@@ -14,8 +14,6 @@ import {
   Settings,
   Umbrella
 } from 'lucide-react';
-import { useBrelloStore } from '@/store/brello-store';
-import type { UserRole } from '@/types';
 
 interface SidebarProps {
   currentPage: string;
@@ -26,69 +24,52 @@ interface MenuItem {
   id: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  roles: UserRole[];
 }
 
 const menuItems: MenuItem[] = [
   {
     id: 'dashboard',
     label: 'Dashboard',
-    icon: LayoutDashboard,
-    roles: ['admin', 'sales', 'finance', 'viewer']
+    icon: LayoutDashboard
   },
   {
     id: 'pipeline',
     label: 'Pipeline Vendite',
-    icon: TrendingUp,
-    roles: ['admin', 'sales', 'viewer']
+    icon: TrendingUp
   },
   {
     id: 'preventivatore',
     label: 'Preventivatore',
-    icon: Calculator,
-    roles: ['admin', 'sales']
+    icon: Calculator
   },
   {
     id: 'lotti',
     label: 'Calendario Lotti',
-    icon: Calendar,
-    roles: ['admin', 'sales', 'finance', 'viewer']
+    icon: Calendar
   },
   {
     id: 'clienti',
     label: 'Clienti',
-    icon: Users,
-    roles: ['admin', 'sales', 'viewer']
+    icon: Users
   },
   {
     id: 'cassa',
     label: 'Costi & Cassa',
-    icon: DollarSign,
-    roles: ['admin', 'finance', 'viewer']
+    icon: DollarSign
   },
   {
     id: 'scenari',
     label: 'Scenario Planner',
-    icon: BarChart3,
-    roles: ['admin', 'finance', 'viewer']
+    icon: BarChart3
   },
   {
     id: 'report',
     label: 'Report',
-    icon: FileText,
-    roles: ['admin', 'sales', 'finance', 'viewer']
+    icon: FileText
   }
 ];
 
 export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
-  const currentUser = useBrelloStore(state => state.currentUser);
-  
-  const hasAccess = (roles: UserRole[]) => {
-    return currentUser && roles.includes(currentUser.ruolo);
-  };
-  
-  const filteredMenuItems = menuItems.filter(item => hasAccess(item.roles));
-  
   return (
     <div className="flex h-full w-64 flex-col bg-white border-r">
       <div className="flex h-16 items-center border-b px-6">
@@ -100,7 +81,7 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
       
       <ScrollArea className="flex-1 px-3 py-4">
         <div className="space-y-1">
-          {filteredMenuItems.map((item) => (
+          {menuItems.map((item) => (
             <Button
               key={item.id}
               variant={currentPage === item.id ? 'secondary' : 'ghost'}
@@ -132,11 +113,9 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
       
       <div className="border-t p-4">
         <div className="text-sm text-gray-600">
-          <div className="font-medium">
-            {currentUser?.nome} {currentUser?.cognome}
-          </div>
-          <div className="text-xs text-gray-500 capitalize">
-            {currentUser?.ruolo}
+          <div className="font-medium">Brellò Cockpit</div>
+          <div className="text-xs text-gray-500">
+            Sales & Finance Management
           </div>
         </div>
       </div>

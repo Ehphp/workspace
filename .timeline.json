@@ -1,21 +1,21 @@
 {
-  "timeline_index": 44,
+  "timeline_index": 51,
   "planner": {
     "Team Leader": {
       "1": {
         "task_id": "1",
         "dependent_task_ids": [],
-        "instruction": "Analizza il business plan caricato (/workspace/uploads/Business Plan – Brellò Umbrella Sharing (Pilota Alatri).pdf) e crea un PRD dettagliato per l'app web Brellò Sales & Finance Cockpit. L'app deve includere:\n\nFUNZIONALITÀ PRINCIPALI:\n- Tracciamento pipeline vendite per lotto e tipologia spazio\n- Preventivatore con calcolo margini in tempo reale\n- Proiezioni ricavi/costi/cassa con scenari (Base/Best/Worst)\n- Sistema go/no-go per stampa lotto (soglia ≥70% spazi venduti)\n- Gestione variabili finanziarie\n\nMODELLO DATI:\n- Cliente (ragione_sociale, PIVA, categoria, contatti)\n- Lotto (codice, città, periodo 3 mesi, inventario 18 spazi + 10 stazioni)\n- Spazio (tipo Standard/Plus/Premium, prezzi €900/€1100/€1500)\n- SponsorshipStazione (€300/mese = €900/lotto)\n- Opportunità CRM, Contratti, CostItem, MovimentoCassa, KPI Snapshot\n\nPAGINE UI:\n- Dashboard (card lotto corrente, funnel vendite, margine YTD)\n- Pipeline Kanban (drag&drop opportunità)\n- Preventivatore (configurazione proposta, margine live)\n- Calendario Lotti (vista trimestri Q1-Q4)\n- Costi & Cassa (movimenti, grafico saldo)\n- Scenario Planner (slider occupancy/prezzi/costi)\n- Report (per cliente/segmento, export CSV/PDF)\n\nCALCOLI:\n- Ricavo_lotto, Occupancy %, Margine %, Break-even annuo\n- Costi annui base €46.200, target margine €11.7k\n- Allocazione costi su 3 lotti/anno\n\nAUTOMAZIONI:\n- Alert go/no-go a T-14 giorni\n- Solleciti incassi\n- Rinnovi automatici clienti\n\nRUOLI: Admin, Sales, Finance, Viewer\n\nSalva il PRD in /workspace/brello_prd.md",
+        "instruction": "Modifica l'app Brellò per eliminare il sistema di autenticazione e ruoli, creando un'unica utenza con accesso completo a tutte le funzionalità. Rimuovi:\n- LoginForm e sistema di login\n- Controlli di permessi basati su ruoli\n- Sidebar con restrizioni per ruolo\n- Header con menu utente\n\nMantieni tutte le funzionalità esistenti ma rendi tutto accessibile direttamente senza autenticazione. Aggiorna il routing per andare direttamente alla dashboard al caricamento dell'app.",
         "task_type": "general",
         "code": "",
         "result": "",
         "is_success": false,
         "is_finished": true,
-        "assignee": "Emma",
-        "start_at": 1759220907.591464,
-        "end_at": 1759221164.0159569
+        "assignee": "Alex",
+        "start_at": 1759224943.831839,
+        "end_at": 1759225286.9807231
       },
-      "current_task_id": "3",
+      "current_task_id": "1",
       "2": {
         "task_id": "2",
         "dependent_task_ids": [
@@ -43,7 +43,8 @@
         "is_success": false,
         "is_finished": false,
         "assignee": "Alex",
-        "start_at": 1759221859.243226
+        "start_at": 1759221859.243226,
+        "end_at": 1759224943.8318348
       }
     }
   },
@@ -92,7 +93,14 @@
     "41": 1,
     "42": 1,
     "43": 1,
-    "44": 1
+    "44": 1,
+    "45": 1,
+    "46": 1,
+    "47": 1,
+    "48": 1,
+    "49": 1,
+    "50": 1,
+    "51": 1
   },
   "preview_servers": {},
   "preview_server": {
