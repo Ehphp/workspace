@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBrelloStore } from '@/store/brello-store';
 import { CostItem, MovimentoCassa } from '@/types';
-import { Plus, TrendingUp, TrendingDown, Euro, Calendar, Edit, Trash2, DollarSign } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Euro, Calendar, Edit, Trash2, DollarSign, Info, Calculator, BarChart3, ArrowRight, Lightbulb, GitBranch } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CostFormData {
@@ -77,7 +77,6 @@ export default function Cassa() {
     updateCostItem,
     deleteCostItem,
     addMovimentoCassa,
-    updateMovimentoCassa,
     loadCosti,
     loadMovimentiCassa
   } = useBrelloStore();
@@ -125,155 +124,6 @@ export default function Cassa() {
 
   const saldoCassa = totaliMovimenti.entrate - totaliMovimenti.uscite;
 
-  // Cost form validation
-  const validateCostForm = (data: CostFormData): Record<string, string> => {
-    const errors: Record<string, string> = {};
-
-    if (!data.categoria) {
-      errors.categoria = 'Categoria è obbligatoria';
-    }
-
-    if (!data.descrizione.trim()) {
-      errors.descrizione = 'Descrizione è obbligatoria';
-    }
-
-    if (data.importo <= 0) {
-      errors.importo = 'Importo deve essere maggiore di 0';
-    }
-
-    if (!data.data_competenza) {
-      errors.data_competenza = 'Data competenza è obbligatoria';
-    }
-
-    return errors;
-  };
-
-  // Movement form validation
-  const validateMovimentoForm = (data: MovimentoFormData): Record<string, string> => {
-    const errors: Record<string, string> = {};
-
-    if (data.importo <= 0) {
-      errors.importo = 'Importo deve essere maggiore di 0';
-    }
-
-    if (!data.descrizione.trim()) {
-      errors.descrizione = 'Descrizione è obbligatoria';
-    }
-
-    if (!data.data) {
-      errors.data = 'Data è obbligatoria';
-    }
-
-    if (!data.categoria) {
-      errors.categoria = 'Categoria è obbligatoria';
-    }
-
-    return errors;
-  };
-
-  // Handle cost form submission
-  const handleCostSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const errors = validateCostForm(costFormData);
-    setCostFormErrors(errors);
-
-    if (Object.keys(errors).length > 0) {
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      if (editingCost) {
-        await updateCostItem(editingCost.id, costFormData);
-        toast.success('Costo aggiornato con successo');
-      } else {
-        await addCostItem(costFormData);
-        toast.success('Costo aggiunto con successo');
-      }
-      
-      setIsCostDialogOpen(false);
-      setEditingCost(null);
-      setCostFormData(initialCostFormData);
-      setCostFormErrors({});
-    } catch (error) {
-      toast.error('Errore durante il salvataggio del costo');
-      console.error('Error saving cost:', error);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Handle movement form submission
-  const handleMovimentoSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const errors = validateMovimentoForm(movimentoFormData);
-    setMovimentoFormErrors(errors);
-
-    if (Object.keys(errors).length > 0) {
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      await addMovimentoCassa(movimentoFormData);
-      toast.success('Movimento aggiunto con successo');
-      
-      setIsMovimentoDialogOpen(false);
-      setMovimentoFormData(initialMovimentoFormData);
-      setMovimentoFormErrors({});
-    } catch (error) {
-      toast.error('Errore durante il salvataggio del movimento');
-      console.error('Error saving movement:', error);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Handle cost edit
-  const handleEditCost = (cost: CostItem) => {
-    setEditingCost(cost);
-    setCostFormData({
-      categoria: cost.categoria,
-      descrizione: cost.descrizione,
-      importo: cost.importo,
-      cadenza: cost.cadenza,
-      data_competenza: cost.data_competenza,
-      ricorrente: cost.ricorrente
-    });
-    setCostFormErrors({});
-    setIsCostDialogOpen(true);
-  };
-
-  // Handle cost delete
-  const handleDeleteCost = async (id: string) => {
-    try {
-      await deleteCostItem(id);
-      toast.success('Costo eliminato con successo');
-    } catch (error) {
-      toast.error('Errore durante l\'eliminazione del costo');
-      console.error('Error deleting cost:', error);
-    }
-  };
-
-  // Open new cost dialog
-  const openNewCostDialog = () => {
-    setEditingCost(null);
-    setCostFormData(initialCostFormData);
-    setCostFormErrors({});
-    setIsCostDialogOpen(true);
-  };
-
-  // Open new movement dialog
-  const openNewMovimentoDialog = () => {
-    setMovimentoFormData(initialMovimentoFormData);
-    setMovimentoFormErrors({});
-    setIsMovimentoDialogOpen(true);
-  };
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('it-IT', {
       style: 'currency',
@@ -283,16 +133,6 @@ export default function Cassa() {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('it-IT');
-  };
-
-  const getCadenzaLabel = (cadenza: string) => {
-    switch (cadenza) {
-      case 'MENSILE': return 'Mensile';
-      case 'TRIMESTRALE': return 'Trimestrale';
-      case 'ANNUALE': return 'Annuale';
-      case 'UNA_TANTUM': return 'Una tantum';
-      default: return cadenza;
-    }
   };
 
   if (loading) {
@@ -313,70 +153,250 @@ export default function Cassa() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Costi & Cassa</h1>
-          <p className="text-gray-600">Gestisci i costi operativi e monitora i flussi di cassa</p>
+          <h1 className="text-2xl font-bold text-gray-900">Gestione Cassa</h1>
+          <p className="text-gray-600">Monitora entrate, uscite e costi operativi</p>
+        </div>
+        <div className="flex space-x-2">
+          <Button onClick={() => setIsMovimentoDialogOpen(true)} variant="outline">
+            <Plus className="h-4 w-4 mr-2" />
+            Movimento
+          </Button>
+          <Button onClick={() => setIsCostDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Costo
+          </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="costi" className="space-y-4">
+      {/* Info Card - Come funziona la Gestione Cassa */}
+      <Card className="bg-red-50 border-red-200">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2 text-red-900">
+            <Info className="h-5 w-5" />
+            <span>Come Funziona la Gestione Cassa</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-red-800">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <h4 className="font-medium mb-2 flex items-center">
+                <Calculator className="h-4 w-4 mr-2" />
+                💰 Controllo Finanziario Completo
+              </h4>
+              <ul className="space-y-1 text-red-700">
+                <li>• <strong>Movimenti Cassa:</strong> Entrate e uscite effettive</li>
+                <li>• <strong>Costi Strutturali:</strong> Allocazione per margini reali</li>
+                <li>• <strong>Cadenze Multiple:</strong> Mensili, trimestrali, annuali</li>
+                <li>• <strong>Saldo Tempo Reale:</strong> Situazione finanziaria istantanea</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2 flex items-center">
+                <GitBranch className="h-4 w-4 mr-2" />
+                🔄 Integrazione Finanziaria
+              </h4>
+              <ul className="space-y-1 text-red-700">
+                <li>• <strong>← Pipeline:</strong> Opportunità chiuse generano entrate</li>
+                <li>• <strong>→ Preventivatore:</strong> Costi allocati per margini</li>
+                <li>• <strong>→ Dashboard:</strong> KPI margine operativo e break-even</li>
+                <li>• <strong>→ Report:</strong> Analisi redditività e cash flow</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center">
+              <TrendingUp className="h-4 w-4 mr-2 text-green-600" />
+              Entrate Totali
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {formatCurrency(totaliMovimenti.entrate)}
+            </div>
+            <div className="text-xs text-gray-600">Da vendite e ricavi</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center">
+              <TrendingDown className="h-4 w-4 mr-2 text-red-600" />
+              Uscite Totali
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {formatCurrency(totaliMovimenti.uscite)}
+            </div>
+            <div className="text-xs text-gray-600">Spese operative</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center">
+              <Euro className="h-4 w-4 mr-2" />
+              Saldo Cassa
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${saldoCassa >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(saldoCassa)}
+            </div>
+            <div className="text-xs text-gray-600">Posizione netta</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Costi Annuali
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(totaliCosti.annuali)}
+            </div>
+            <div className="text-xs text-gray-600">
+              {formatCurrency(totaliCosti.mensili)}/mese
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Flusso di Integrazione Finanziaria */}
+      <Card className="bg-gradient-to-r from-red-50 to-green-50 border-red-200">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2 text-red-900">
+            <Lightbulb className="h-5 w-5" />
+            <span>Flusso di Integrazione Finanziaria</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-2 text-sm">
+            <div className="text-center">
+              <div className="bg-red-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2">
+                <Calculator className="h-6 w-6 text-red-600" />
+              </div>
+              <h4 className="font-medium mb-1">Costi Strutturali</h4>
+              <p className="text-gray-600 text-xs">Definizione e allocazione</p>
+            </div>
+            
+            <div className="flex items-center justify-center">
+              <ArrowRight className="h-4 w-4 text-gray-400" />
+            </div>
+
+            <div className="text-center">
+              <div className="bg-purple-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2">
+                <DollarSign className="h-6 w-6 text-purple-600" />
+              </div>
+              <h4 className="font-medium mb-1">Margini Reali</h4>
+              <p className="text-gray-600 text-xs">Calcolo preventivi</p>
+            </div>
+
+            <div className="flex items-center justify-center">
+              <ArrowRight className="h-4 w-4 text-gray-400" />
+            </div>
+
+            <div className="text-center">
+              <div className="bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2">
+                <Euro className="h-6 w-6 text-green-600" />
+              </div>
+              <h4 className="font-medium mb-1">Cash Flow</h4>
+              <p className="text-gray-600 text-xs">Monitoraggio continuo</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabs for Movements and Costs */}
+      <Tabs defaultValue="movimenti" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="costi">Gestione Costi</TabsTrigger>
           <TabsTrigger value="movimenti">Movimenti Cassa</TabsTrigger>
-          <TabsTrigger value="dashboard">Dashboard Finanziaria</TabsTrigger>
+          <TabsTrigger value="costi">Costi Strutturali</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="costi" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Struttura Costi</h2>
-            <Button onClick={openNewCostDialog}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuovo Costo
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Costi Totali Annui</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(totaliCosti.annuali)}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Costi Medi Mensili</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(totaliCosti.mensili)}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Voci di Costo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{costi.length}</div>
-              </CardContent>
-            </Card>
-          </div>
-
+        <TabsContent value="movimenti">
           <Card>
             <CardHeader>
-              <CardTitle>Elenco Costi</CardTitle>
+              <CardTitle>Movimenti di Cassa</CardTitle>
               <CardDescription>
-                Tutti i costi operativi con possibilità di modifica ed eliminazione
+                Storico entrate e uscite effettive
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {movimenti_cassa.length === 0 ? (
+                <div className="text-center py-8">
+                  <Euro className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="font-medium text-gray-900 mb-2">Nessun movimento registrato</h3>
+                  <p className="text-gray-500 mb-4">Inizia registrando il primo movimento di cassa</p>
+                  <Button onClick={() => setIsMovimentoDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Aggiungi Movimento
+                  </Button>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Descrizione</TableHead>
+                        <TableHead>Categoria</TableHead>
+                        <TableHead className="text-right">Importo</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {movimenti_cassa.map((movimento) => (
+                        <TableRow key={movimento.id}>
+                          <TableCell>{formatDate(movimento.data)}</TableCell>
+                          <TableCell>
+                            <Badge variant={movimento.tipo === 'ENTRATA' ? 'default' : 'secondary'}>
+                              {movimento.tipo === 'ENTRATA' ? 'Entrata' : 'Uscita'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{movimento.descrizione}</TableCell>
+                          <TableCell>{movimento.categoria}</TableCell>
+                          <TableCell className={`text-right font-medium ${
+                            movimento.tipo === 'ENTRATA' ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {movimento.tipo === 'ENTRATA' ? '+' : '-'}{formatCurrency(movimento.importo)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="costi">
+          <Card>
+            <CardHeader>
+              <CardTitle>Costi Strutturali</CardTitle>
+              <CardDescription>
+                Costi fissi e variabili per calcolo margini
               </CardDescription>
             </CardHeader>
             <CardContent>
               {costi.length === 0 ? (
                 <div className="text-center py-8">
-                  <Euro className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="font-medium text-gray-900 mb-2">Nessun costo inserito</h3>
-                  <p className="text-gray-500 mb-4">Inizia aggiungendo i tuoi primi costi operativi</p>
-                  <Button onClick={openNewCostDialog}>
+                  <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="font-medium text-gray-900 mb-2">Nessun costo definito</h3>
+                  <p className="text-gray-500 mb-4">Definisci i costi strutturali per calcolare i margini reali</p>
+                  <Button onClick={() => setIsCostDialogOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Aggiungi Primo Costo
+                    Aggiungi Costo
                   </Button>
                 </div>
               ) : (
@@ -386,10 +406,9 @@ export default function Cassa() {
                       <TableRow>
                         <TableHead>Categoria</TableHead>
                         <TableHead>Descrizione</TableHead>
-                        <TableHead>Importo</TableHead>
                         <TableHead>Cadenza</TableHead>
                         <TableHead>Data</TableHead>
-                        <TableHead>Ricorrente</TableHead>
+                        <TableHead className="text-right">Importo</TableHead>
                         <TableHead className="text-right">Azioni</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -399,22 +418,15 @@ export default function Cassa() {
                           <TableCell>
                             <Badge variant="outline">{costo.categoria}</Badge>
                           </TableCell>
-                          <TableCell className="font-medium">{costo.descrizione}</TableCell>
-                          <TableCell className="font-mono">{formatCurrency(costo.importo)}</TableCell>
-                          <TableCell>{getCadenzaLabel(costo.cadenza)}</TableCell>
+                          <TableCell>{costo.descrizione}</TableCell>
+                          <TableCell>{costo.cadenza}</TableCell>
                           <TableCell>{formatDate(costo.data_competenza)}</TableCell>
-                          <TableCell>
-                            <Badge variant={costo.ricorrente ? 'default' : 'secondary'}>
-                              {costo.ricorrente ? 'Sì' : 'No'}
-                            </Badge>
+                          <TableCell className="text-right font-medium">
+                            {formatCurrency(costo.importo)}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditCost(costo)}
-                              >
+                              <Button variant="outline" size="sm">
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <AlertDialog>
@@ -427,14 +439,13 @@ export default function Cassa() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Elimina Costo</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Sei sicuro di voler eliminare il costo "{costo.descrizione}"? 
-                                      Questa azione non può essere annullata.
+                                      Sei sicuro di voler eliminare questo costo? Questa azione non può essere annullata.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Annulla</AlertDialogCancel>
                                     <AlertDialogAction 
-                                      onClick={() => handleDeleteCost(costo.id)}
+                                      onClick={() => deleteCostItem(costo.id)}
                                       className="bg-red-600 hover:bg-red-700"
                                     >
                                       Elimina
@@ -453,332 +464,22 @@ export default function Cassa() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="movimenti" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Movimenti di Cassa</h2>
-            <Button onClick={openNewMovimentoDialog}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nuovo Movimento
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Entrate Totali</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">{formatCurrency(totaliMovimenti.entrate)}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Uscite Totali</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">{formatCurrency(totaliMovimenti.uscite)}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Saldo Cassa</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-bold ${saldoCassa >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(saldoCassa)}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Movimenti</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{movimenti_cassa.length}</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Storico Movimenti</CardTitle>
-              <CardDescription>
-                Cronologia completa di entrate e uscite
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {movimenti_cassa.length === 0 ? (
-                <div className="text-center py-8">
-                  <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="font-medium text-gray-900 mb-2">Nessun movimento registrato</h3>
-                  <p className="text-gray-500 mb-4">Inizia registrando i tuoi primi movimenti di cassa</p>
-                  <Button onClick={openNewMovimentoDialog}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Aggiungi Primo Movimento
-                  </Button>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Descrizione</TableHead>
-                        <TableHead>Categoria</TableHead>
-                        <TableHead>Importo</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {movimenti_cassa
-                        .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
-                        .map((movimento) => (
-                        <TableRow key={movimento.id}>
-                          <TableCell>{formatDate(movimento.data)}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center">
-                              {movimento.tipo === 'ENTRATA' ? (
-                                <TrendingUp className="h-4 w-4 text-green-600 mr-2" />
-                              ) : (
-                                <TrendingDown className="h-4 w-4 text-red-600 mr-2" />
-                              )}
-                              <Badge variant={movimento.tipo === 'ENTRATA' ? 'default' : 'destructive'}>
-                                {movimento.tipo === 'ENTRATA' ? 'Entrata' : 'Uscita'}
-                              </Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-medium">{movimento.descrizione}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{movimento.categoria}</Badge>
-                          </TableCell>
-                          <TableCell className={`font-mono ${movimento.tipo === 'ENTRATA' ? 'text-green-600' : 'text-red-600'}`}>
-                            {movimento.tipo === 'ENTRATA' ? '+' : '-'}{formatCurrency(movimento.importo)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="dashboard" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Analisi Costi per Categoria</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {CATEGORIE_COSTI.map(categoria => {
-                    const costiCategoria = costi.filter(c => c.categoria === categoria);
-                    const totaleCategoria = costiCategoria.reduce((sum, c) => sum + c.importo, 0);
-                    const percentuale = totaliCosti.annuali > 0 ? (totaleCategoria / totaliCosti.annuali) * 100 : 0;
-                    
-                    if (totaleCategoria === 0) return null;
-                    
-                    return (
-                      <div key={categoria} className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="outline">{categoria}</Badge>
-                          <span className="text-sm text-gray-600">({costiCategoria.length})</span>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium">{formatCurrency(totaleCategoria)}</div>
-                          <div className="text-sm text-gray-500">{percentuale.toFixed(1)}%</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Flusso di Cassa Mensile</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                    <span className="font-medium">Entrate Medie/Mese</span>
-                    <span className="text-green-600 font-bold">
-                      {formatCurrency(totaliMovimenti.entrate / Math.max(1, new Date().getMonth() + 1))}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                    <span className="font-medium">Uscite Medie/Mese</span>
-                    <span className="text-red-600 font-bold">
-                      {formatCurrency(totaliMovimenti.uscite / Math.max(1, new Date().getMonth() + 1))}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                    <span className="font-medium">Costi Fissi/Mese</span>
-                    <span className="text-blue-600 font-bold">
-                      {formatCurrency(totaliCosti.mensili)}
-                    </span>
-                  </div>
-                  <div className={`flex justify-between items-center p-3 rounded-lg ${saldoCassa >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
-                    <span className="font-medium">Saldo Netto</span>
-                    <span className={`font-bold ${saldoCassa >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(saldoCassa)}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
       </Tabs>
 
-      {/* Cost Dialog */}
-      <Dialog open={isCostDialogOpen} onOpenChange={setIsCostDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editingCost ? 'Modifica Costo' : 'Nuovo Costo'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingCost 
-                ? 'Modifica i dati del costo selezionato'
-                : 'Inserisci i dati del nuovo costo operativo'
-              }
-            </DialogDescription>
-          </DialogHeader>
-          
-          <form onSubmit={handleCostSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="categoria">Categoria *</Label>
-                <Select 
-                  value={costFormData.categoria} 
-                  onValueChange={(value) => setCostFormData({...costFormData, categoria: value})}
-                >
-                  <SelectTrigger className={costFormErrors.categoria ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Seleziona categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIE_COSTI.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {costFormErrors.categoria && (
-                  <p className="text-sm text-red-500">{costFormErrors.categoria}</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="importo">Importo (€) *</Label>
-                <Input
-                  id="importo"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={costFormData.importo}
-                  onChange={(e) => setCostFormData({...costFormData, importo: parseFloat(e.target.value) || 0})}
-                  className={costFormErrors.importo ? 'border-red-500' : ''}
-                />
-                {costFormErrors.importo && (
-                  <p className="text-sm text-red-500">{costFormErrors.importo}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="descrizione">Descrizione *</Label>
-              <Input
-                id="descrizione"
-                value={costFormData.descrizione}
-                onChange={(e) => setCostFormData({...costFormData, descrizione: e.target.value})}
-                className={costFormErrors.descrizione ? 'border-red-500' : ''}
-                placeholder="Descrizione dettagliata del costo"
-              />
-              {costFormErrors.descrizione && (
-                <p className="text-sm text-red-500">{costFormErrors.descrizione}</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="cadenza">Cadenza *</Label>
-                <Select 
-                  value={costFormData.cadenza} 
-                  onValueChange={(value: 'MENSILE' | 'TRIMESTRALE' | 'ANNUALE' | 'UNA_TANTUM') => 
-                    setCostFormData({...costFormData, cadenza: value})
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="MENSILE">Mensile</SelectItem>
-                    <SelectItem value="TRIMESTRALE">Trimestrale</SelectItem>
-                    <SelectItem value="ANNUALE">Annuale</SelectItem>
-                    <SelectItem value="UNA_TANTUM">Una tantum</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="data_competenza">Data Competenza *</Label>
-                <Input
-                  id="data_competenza"
-                  type="date"
-                  value={costFormData.data_competenza}
-                  onChange={(e) => setCostFormData({...costFormData, data_competenza: e.target.value})}
-                  className={costFormErrors.data_competenza ? 'border-red-500' : ''}
-                />
-                {costFormErrors.data_competenza && (
-                  <p className="text-sm text-red-500">{costFormErrors.data_competenza}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="ricorrente"
-                checked={costFormData.ricorrente}
-                onChange={(e) => setCostFormData({...costFormData, ricorrente: e.target.checked})}
-                className="rounded"
-              />
-              <Label htmlFor="ricorrente">Costo ricorrente</Label>
-            </div>
-
-            <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setIsCostDialogOpen(false)}
-              >
-                Annulla
-              </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? 'Salvando...' : (editingCost ? 'Aggiorna Costo' : 'Crea Costo')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Movement Dialog */}
+      {/* Add Movement Dialog */}
       <Dialog open={isMovimentoDialogOpen} onOpenChange={setIsMovimentoDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Nuovo Movimento di Cassa</DialogTitle>
             <DialogDescription>
-              Registra una nuova entrata o uscita di cassa
+              Registra una nuova entrata o uscita
             </DialogDescription>
           </DialogHeader>
           
-          <form onSubmit={handleMovimentoSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="tipo">Tipo Movimento *</Label>
+                <Label>Tipo *</Label>
                 <Select 
                   value={movimentoFormData.tipo} 
                   onValueChange={(value: 'ENTRATA' | 'USCITA') => 
@@ -796,45 +497,54 @@ export default function Cassa() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="importo_movimento">Importo (€) *</Label>
+                <Label>Importo (€) *</Label>
                 <Input
-                  id="importo_movimento"
                   type="number"
                   step="0.01"
-                  min="0"
                   value={movimentoFormData.importo}
-                  onChange={(e) => setMovimentoFormData({...movimentoFormData, importo: parseFloat(e.target.value) || 0})}
-                  className={movimentoFormErrors.importo ? 'border-red-500' : ''}
+                  onChange={(e) => setMovimentoFormData({
+                    ...movimentoFormData, 
+                    importo: parseFloat(e.target.value) || 0
+                  })}
                 />
-                {movimentoFormErrors.importo && (
-                  <p className="text-sm text-red-500">{movimentoFormErrors.importo}</p>
-                )}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="descrizione_movimento">Descrizione *</Label>
+              <Label>Descrizione *</Label>
               <Input
-                id="descrizione_movimento"
                 value={movimentoFormData.descrizione}
-                onChange={(e) => setMovimentoFormData({...movimentoFormData, descrizione: e.target.value})}
-                className={movimentoFormErrors.descrizione ? 'border-red-500' : ''}
-                placeholder="Descrizione del movimento"
+                onChange={(e) => setMovimentoFormData({
+                  ...movimentoFormData, 
+                  descrizione: e.target.value
+                })}
               />
-              {movimentoFormErrors.descrizione && (
-                <p className="text-sm text-red-500">{movimentoFormErrors.descrizione}</p>
-              )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="categoria_movimento">Categoria *</Label>
+                <Label>Data *</Label>
+                <Input
+                  type="date"
+                  value={movimentoFormData.data}
+                  onChange={(e) => setMovimentoFormData({
+                    ...movimentoFormData, 
+                    data: e.target.value
+                  })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Categoria *</Label>
                 <Select 
                   value={movimentoFormData.categoria} 
-                  onValueChange={(value) => setMovimentoFormData({...movimentoFormData, categoria: value})}
+                  onValueChange={(value) => setMovimentoFormData({
+                    ...movimentoFormData, 
+                    categoria: value
+                  })}
                 >
-                  <SelectTrigger className={movimentoFormErrors.categoria ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Seleziona categoria" />
+                  <SelectTrigger>
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {CATEGORIE_MOVIMENTI.map(cat => (
@@ -842,39 +552,136 @@ export default function Cassa() {
                     ))}
                   </SelectContent>
                 </Select>
-                {movimentoFormErrors.categoria && (
-                  <p className="text-sm text-red-500">{movimentoFormErrors.categoria}</p>
-                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsMovimentoDialogOpen(false)}>
+              Annulla
+            </Button>
+            <Button onClick={() => {
+              addMovimentoCassa(movimentoFormData);
+              setIsMovimentoDialogOpen(false);
+              setMovimentoFormData(initialMovimentoFormData);
+            }}>
+              Salva Movimento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Cost Dialog */}
+      <Dialog open={isCostDialogOpen} onOpenChange={setIsCostDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nuovo Costo Strutturale</DialogTitle>
+            <DialogDescription>
+              Definisci un costo per il calcolo dei margini
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Categoria *</Label>
+                <Select 
+                  value={costFormData.categoria} 
+                  onValueChange={(value) => setCostFormData({...costFormData, categoria: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIE_COSTI.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="data_movimento">Data *</Label>
-                <Input
-                  id="data_movimento"
-                  type="date"
-                  value={movimentoFormData.data}
-                  onChange={(e) => setMovimentoFormData({...movimentoFormData, data: e.target.value})}
-                  className={movimentoFormErrors.data ? 'border-red-500' : ''}
-                />
-                {movimentoFormErrors.data && (
-                  <p className="text-sm text-red-500">{movimentoFormErrors.data}</p>
-                )}
+                <Label>Cadenza *</Label>
+                <Select 
+                  value={costFormData.cadenza} 
+                  onValueChange={(value: 'MENSILE' | 'TRIMESTRALE' | 'ANNUALE' | 'UNA_TANTUM') => 
+                    setCostFormData({...costFormData, cadenza: value})
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MENSILE">Mensile</SelectItem>
+                    <SelectItem value="TRIMESTRALE">Trimestrale</SelectItem>
+                    <SelectItem value="ANNUALE">Annuale</SelectItem>
+                    <SelectItem value="UNA_TANTUM">Una Tantum</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
-            <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setIsMovimentoDialogOpen(false)}
-              >
-                Annulla
-              </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? 'Salvando...' : 'Registra Movimento'}
-              </Button>
-            </DialogFooter>
-          </form>
+            <div className="space-y-2">
+              <Label>Descrizione *</Label>
+              <Input
+                value={costFormData.descrizione}
+                onChange={(e) => setCostFormData({...costFormData, descrizione: e.target.value})}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Importo (€) *</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={costFormData.importo}
+                  onChange={(e) => setCostFormData({
+                    ...costFormData, 
+                    importo: parseFloat(e.target.value) || 0
+                  })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Data Competenza *</Label>
+                <Input
+                  type="date"
+                  value={costFormData.data_competenza}
+                  onChange={(e) => setCostFormData({
+                    ...costFormData, 
+                    data_competenza: e.target.value
+                  })}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="ricorrente"
+                checked={costFormData.ricorrente}
+                onChange={(e) => setCostFormData({
+                  ...costFormData, 
+                  ricorrente: e.target.checked
+                })}
+              />
+              <Label htmlFor="ricorrente">Costo ricorrente</Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCostDialogOpen(false)}>
+              Annulla
+            </Button>
+            <Button onClick={() => {
+              addCostItem(costFormData);
+              setIsCostDialogOpen(false);
+              setCostFormData(initialCostFormData);
+            }}>
+              Salva Costo
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

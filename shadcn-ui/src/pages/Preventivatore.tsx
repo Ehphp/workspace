@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from '@/components/ui/textarea';
 import { useBrelloStore } from '@/store/brello-store';
 import { Cliente, ClienteCategoria, PreventivatoreResult } from '@/types';
-import { Calculator, FileText, Plus, User, Building2 } from 'lucide-react';
+import { Calculator, FileText, Plus, User, Building2, Info, Target, Euro, ArrowRight, Lightbulb, GitBranch, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SpazioRequest {
@@ -93,7 +93,7 @@ export default function Preventivatore() {
     setSpazi(spazi.filter((_, i) => i !== index));
   };
 
-  const updateSpazio = (index: number, field: keyof SpazioRequest, value: any) => {
+  const updateSpazio = (index: number, field: keyof SpazioRequest, value: string | number) => {
     const newSpazi = [...spazi];
     newSpazi[index] = { ...newSpazi[index], [field]: value };
     setSpazi(newSpazi);
@@ -107,7 +107,7 @@ export default function Preventivatore() {
     setStazioni(stazioni.filter((_, i) => i !== index));
   };
 
-  const updateStazione = (index: number, field: keyof StazioneRequest, value: any) => {
+  const updateStazione = (index: number, field: keyof StazioneRequest, value: string | number) => {
     const newStazioni = [...stazioni];
     newStazioni[index] = { ...newStazioni[index], [field]: value };
     setStazioni(newStazioni);
@@ -253,6 +253,44 @@ export default function Preventivatore() {
           Nuovo Cliente
         </Button>
       </div>
+
+      {/* Info Card - Come funziona il Preventivatore */}
+      <Card className="bg-purple-50 border-purple-200">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2 text-purple-900">
+            <Info className="h-5 w-5" />
+            <span>Come Funziona il Preventivatore</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-purple-800">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <h4 className="font-medium mb-2 flex items-center">
+                <Calculator className="h-4 w-4 mr-2" />
+                💰 Calcolo Margini Intelligente
+              </h4>
+              <ul className="space-y-1 text-purple-700">
+                <li>• <strong>Prezzi Base:</strong> Standard €900, Plus €1.100, Premium €1.500</li>
+                <li>• <strong>Sconti Personalizzati:</strong> Per cliente e volume</li>
+                <li>• <strong>Costi Allocati:</strong> Integrazione con gestione costi</li>
+                <li>• <strong>Margine Reale:</strong> Calcolo automatico redditività</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2 flex items-center">
+                <GitBranch className="h-4 w-4 mr-2" />
+                🔄 Integrazione Sistema
+              </h4>
+              <ul className="space-y-1 text-purple-700">
+                <li>• <strong>← Clienti:</strong> Selezione rapida dalla base dati</li>
+                <li>• <strong>→ Pipeline:</strong> Preventivi diventano opportunità</li>
+                <li>• <strong>→ Dashboard:</strong> Margini impattano KPI redditività</li>
+                <li>• <strong>← Costi:</strong> Allocazione automatica per margine reale</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form Panel */}
@@ -532,6 +570,39 @@ export default function Preventivatore() {
                       <span className={result.margine_perc >= 0 ? 'text-green-600' : 'text-red-600'}>
                         {result.margine_perc.toFixed(1)}%
                       </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Flusso di Conversione */}
+              <Card className="bg-gradient-to-r from-purple-50 to-green-50 border-purple-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2 text-purple-900">
+                    <Lightbulb className="h-5 w-5" />
+                    <span>Prossimi Passi</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-purple-100 rounded-full w-8 h-8 flex items-center justify-center">
+                        <Target className="h-4 w-4 text-purple-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">1. Crea Opportunità</h4>
+                        <p className="text-gray-600 text-xs">Trasforma in opportunità Pipeline</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-green-100 rounded-full w-8 h-8 flex items-center justify-center">
+                        <TrendingUp className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">2. Monitora KPI</h4>
+                        <p className="text-gray-600 text-xs">Margine impatta Dashboard</p>
+                      </div>
                     </div>
                   </div>
                 </CardContent>

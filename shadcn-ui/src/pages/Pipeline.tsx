@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useBrelloStore } from '@/store/brello-store';
 import { Opportunita, Cliente } from '@/types';
-import { Plus, GripVertical, TrendingUp, Users, Euro, Calendar, HelpCircle, Info, Target, CheckCircle, DollarSign } from 'lucide-react';
+import { Plus, GripVertical, TrendingUp, Users, Euro, Calendar, HelpCircle, Info, Target, CheckCircle, DollarSign, ArrowRight, Lightbulb, GitBranch, Calculator } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface OpportunitaFormData {
@@ -260,32 +260,96 @@ export default function Pipeline() {
           </Button>
         </div>
 
-        {/* Help Section */}
-        <Card className="bg-blue-50 border-blue-200">
+        {/* Info Card - Come funziona la Pipeline */}
+        <Card className="bg-orange-50 border-orange-200">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-blue-900">
+            <CardTitle className="flex items-center space-x-2 text-orange-900">
               <Info className="h-5 w-5" />
-              <span>Come funziona la Pipeline</span>
+              <span>Come Funziona la Pipeline Vendite</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-blue-800">
+          <CardContent className="text-orange-800">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
-                <h4 className="font-medium mb-2">🎯 Gestione Opportunità</h4>
-                <ul className="space-y-1 text-blue-700">
-                  <li>• Trascina le opportunità tra le colonne per aggiornarle</li>
-                  <li>• Ogni fase ha una probabilità di chiusura predefinita</li>
-                  <li>• Il valore pesato calcola il ricavo probabile</li>
+                <h4 className="font-medium mb-2 flex items-center">
+                  <Target className="h-4 w-4 mr-2" />
+                  🎯 Gestione Opportunità Avanzata
+                </h4>
+                <ul className="space-y-1 text-orange-700">
+                  <li>• <strong>Drag & Drop:</strong> Sposta opportunità tra fasi facilmente</li>
+                  <li>• <strong>Probabilità Dinamiche:</strong> Calcolo automatico per fase</li>
+                  <li>• <strong>Valore Pesato:</strong> Ricavo probabile basato su probabilità</li>
+                  <li>• <strong>Tracking Completo:</strong> Date, note e stato avanzamento</li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-medium mb-2">📊 Fasi del Processo</h4>
-                <ul className="space-y-1 text-blue-700">
-                  <li>• <strong>Lead:</strong> Primo contatto e interesse</li>
-                  <li>• <strong>Qualifica:</strong> Budget e timeline confermati</li>
-                  <li>• <strong>Offerta:</strong> Preventivo inviato</li>
-                  <li>• <strong>Chiusura:</strong> Negoziazione finale</li>
+                <h4 className="font-medium mb-2 flex items-center">
+                  <GitBranch className="h-4 w-4 mr-2" />
+                  🔄 Integrazione Ecosistema
+                </h4>
+                <ul className="space-y-1 text-orange-700">
+                  <li>• <strong>← Clienti:</strong> Base dati per nuove opportunità</li>
+                  <li>• <strong>← Preventivatore:</strong> Preventivi diventano opportunità</li>
+                  <li>• <strong>→ Dashboard:</strong> KPI conversione e valore pipeline</li>
+                  <li>• <strong>→ Cassa:</strong> Opportunità chiuse generano ricavi</li>
                 </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Flusso del Processo Commerciale */}
+        <Card className="bg-gradient-to-r from-orange-50 to-green-50 border-orange-200">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-orange-900">
+              <Lightbulb className="h-5 w-5" />
+              <span>Flusso del Processo Commerciale</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-2 text-sm">
+              <div className="text-center">
+                <div className="bg-gray-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2">
+                  <Users className="h-6 w-6 text-gray-600" />
+                </div>
+                <h4 className="font-medium mb-1">Lead (30%)</h4>
+                <p className="text-gray-600 text-xs">Primo interesse</p>
+              </div>
+              
+              <div className="flex items-center justify-center">
+                <ArrowRight className="h-4 w-4 text-gray-400" />
+              </div>
+
+              <div className="text-center">
+                <div className="bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2">
+                  <Target className="h-6 w-6 text-blue-600" />
+                </div>
+                <h4 className="font-medium mb-1">Qualifica (50%)</h4>
+                <p className="text-gray-600 text-xs">Budget confermato</p>
+              </div>
+
+              <div className="flex items-center justify-center">
+                <ArrowRight className="h-4 w-4 text-gray-400" />
+              </div>
+
+              <div className="text-center">
+                <div className="bg-yellow-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2">
+                  <Calculator className="h-6 w-6 text-yellow-600" />
+                </div>
+                <h4 className="font-medium mb-1">Offerta (75%)</h4>
+                <p className="text-gray-600 text-xs">Preventivo inviato</p>
+              </div>
+
+              <div className="flex items-center justify-center">
+                <ArrowRight className="h-4 w-4 text-gray-400" />
+              </div>
+
+              <div className="text-center">
+                <div className="bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
+                <h4 className="font-medium mb-1">Chiusura (90%)</h4>
+                <p className="text-gray-600 text-xs">Firma contratto</p>
               </div>
             </div>
           </CardContent>
