@@ -1,11 +1,11 @@
 {
-  "timeline_index": 51,
+  "timeline_index": 58,
   "planner": {
     "Team Leader": {
       "1": {
         "task_id": "1",
         "dependent_task_ids": [],
-        "instruction": "Modifica l'app Brellò per eliminare il sistema di autenticazione e ruoli, creando un'unica utenza con accesso completo a tutte le funzionalità. Rimuovi:\n- LoginForm e sistema di login\n- Controlli di permessi basati su ruoli\n- Sidebar con restrizioni per ruolo\n- Header con menu utente\n\nMantieni tutte le funzionalità esistenti ma rendi tutto accessibile direttamente senza autenticazione. Aggiorna il routing per andare direttamente alla dashboard al caricamento dell'app.",
+        "instruction": "Migra l'app Brellò da localStorage a Supabase come backend. Implementa:\n1. Schema database Supabase con tutte le tabelle (clienti, lotti, spazi, stazioni, opportunita, contratti, costi, movimenti_cassa, kpi_snapshots)\n2. Configurazione client Supabase nell'app\n3. Aggiorna lo store per usare API Supabase invece di localStorage\n4. Implementa CRUD operations con Supabase\n5. Mantieni tutte le funzionalità esistenti\n6. Aggiungi gestione errori e loading states\n7. Migra i dati di esempio esistenti su Supabase\n\nUsa il client Supabase JavaScript e mantieni la stessa struttura dati e logica business dell'app esistente.",
         "task_type": "general",
         "code": "",
         "result": "",
@@ -13,7 +13,7 @@
         "is_finished": true,
         "assignee": "Alex",
         "start_at": 1759224943.831839,
-        "end_at": 1759225286.9807231
+        "end_at": 1759227068.983159
       },
       "current_task_id": "1",
       "2": {
@@ -100,7 +100,14 @@
     "48": 1,
     "49": 1,
     "50": 1,
-    "51": 1
+    "51": 1,
+    "52": 1,
+    "53": 1,
+    "54": 1,
+    "55": 1,
+    "56": 1,
+    "57": 1,
+    "58": 1
   },
   "preview_servers": {},
   "preview_server": {
