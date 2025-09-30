@@ -10,6 +10,7 @@ import Dashboard from '@/pages/Dashboard';
 import Pipeline from '@/pages/Pipeline';
 import Preventivatore from '@/pages/Preventivatore';
 import Lotti from '@/pages/Lotti';
+import Clienti from '@/pages/Clienti';
 import Cassa from '@/pages/Cassa';
 import Scenari from '@/pages/Scenari';
 import Report from '@/pages/Report';
@@ -36,7 +37,7 @@ const App = () => {
       case 'lotti':
         return <Lotti />;
       case 'clienti':
-        return <div className="p-6"><h1 className="text-2xl font-bold">Gestione Clienti</h1><p className="text-gray-600">Funzionalità in sviluppo</p></div>;
+        return <Clienti />;
       case 'cassa':
         return <Cassa />;
       case 'scenari':

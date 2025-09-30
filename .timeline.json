@@ -1,11 +1,11 @@
 {
-  "timeline_index": 66,
+  "timeline_index": 71,
   "planner": {
     "Team Leader": {
       "1": {
         "task_id": "1",
         "dependent_task_ids": [],
-        "instruction": "Correggi il bug nella pagina Scenario Planner che causa il crash quando si clicca su di essa. Analizza il codice della pagina Scenari, identifica l'errore (probabilmente legato a Supabase integration o componenti mancanti) e risolvi il problema. Assicurati che la pagina si carichi correttamente e che tutti i controlli (slider, calcoli scenario) funzionino.",
+        "instruction": "Implementa la pagina Gestione Clienti completa per l'app Brellò. La pagina deve includere:\n1. Lista clienti con tabella responsive e filtri (categoria, stato attivo/inattivo)\n2. Funzionalità CRUD complete (Create, Read, Update, Delete) \n3. Form per aggiungere/modificare clienti con tutti i campi (ragione sociale, P.IVA, categoria, contatti)\n4. Modal/dialog per conferma eliminazione\n5. Ricerca clienti per nome/P.IVA\n6. Statistiche clienti (totali per categoria, attivi/inattivi)\n7. Integrazione completa con Supabase per persistenza dati\n8. Validazione form e gestione errori\n9. Design coerente con il resto dell'app (Shadcn-ui, Tailwind)\n\nSostituisci il placeholder esistente nella navigazione con la pagina completa funzionante.",
         "task_type": "general",
         "code": "",
         "result": "",
@@ -13,7 +13,7 @@
         "is_finished": true,
         "assignee": "Alex",
         "start_at": 1759224943.831839,
-        "end_at": 1759228754.8612735
+        "end_at": 1759229419.6146352
       },
       "current_task_id": "1",
       "2": {
@@ -115,7 +115,12 @@
     "63": 1,
     "64": 1,
     "65": 1,
-    "66": 1
+    "66": 1,
+    "67": 1,
+    "68": 1,
+    "69": 1,
+    "70": 1,
+    "71": 1
   },
   "preview_servers": {},
   "preview_server": {
