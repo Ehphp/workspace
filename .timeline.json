@@ -1,11 +1,11 @@
 {
-  "timeline_index": 58,
+  "timeline_index": 66,
   "planner": {
     "Team Leader": {
       "1": {
         "task_id": "1",
         "dependent_task_ids": [],
-        "instruction": "Migra l'app Brellò da localStorage a Supabase come backend. Implementa:\n1. Schema database Supabase con tutte le tabelle (clienti, lotti, spazi, stazioni, opportunita, contratti, costi, movimenti_cassa, kpi_snapshots)\n2. Configurazione client Supabase nell'app\n3. Aggiorna lo store per usare API Supabase invece di localStorage\n4. Implementa CRUD operations con Supabase\n5. Mantieni tutte le funzionalità esistenti\n6. Aggiungi gestione errori e loading states\n7. Migra i dati di esempio esistenti su Supabase\n\nUsa il client Supabase JavaScript e mantieni la stessa struttura dati e logica business dell'app esistente.",
+        "instruction": "Correggi il bug nella pagina Scenario Planner che causa il crash quando si clicca su di essa. Analizza il codice della pagina Scenari, identifica l'errore (probabilmente legato a Supabase integration o componenti mancanti) e risolvi il problema. Assicurati che la pagina si carichi correttamente e che tutti i controlli (slider, calcoli scenario) funzionino.",
         "task_type": "general",
         "code": "",
         "result": "",
@@ -13,7 +13,7 @@
         "is_finished": true,
         "assignee": "Alex",
         "start_at": 1759224943.831839,
-        "end_at": 1759227068.983159
+        "end_at": 1759228754.8612735
       },
       "current_task_id": "1",
       "2": {
@@ -107,7 +107,15 @@
     "55": 1,
     "56": 1,
     "57": 1,
-    "58": 1
+    "58": 1,
+    "59": 1,
+    "60": 1,
+    "61": 1,
+    "62": 1,
+    "63": 1,
+    "64": 1,
+    "65": 1,
+    "66": 1
   },
   "preview_servers": {},
   "preview_server": {
