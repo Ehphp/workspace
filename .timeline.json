@@ -1,11 +1,11 @@
 {
-  "timeline_index": 71,
+  "timeline_index": 80,
   "planner": {
     "Team Leader": {
       "1": {
         "task_id": "1",
         "dependent_task_ids": [],
-        "instruction": "Implementa la pagina Gestione Clienti completa per l'app Brellò. La pagina deve includere:\n1. Lista clienti con tabella responsive e filtri (categoria, stato attivo/inattivo)\n2. Funzionalità CRUD complete (Create, Read, Update, Delete) \n3. Form per aggiungere/modificare clienti con tutti i campi (ragione sociale, P.IVA, categoria, contatti)\n4. Modal/dialog per conferma eliminazione\n5. Ricerca clienti per nome/P.IVA\n6. Statistiche clienti (totali per categoria, attivi/inattivi)\n7. Integrazione completa con Supabase per persistenza dati\n8. Validazione form e gestione errori\n9. Design coerente con il resto dell'app (Shadcn-ui, Tailwind)\n\nSostituisci il placeholder esistente nella navigazione con la pagina completa funzionante.",
+        "instruction": "Implementa le seguenti migliorie per l'app Brellò:\n\n1. **Tab Costi & Cassa**: Aggiungi pulsante \"Modifica\" per ogni record nella tabella costi per permettere la modifica dei costi già inseriti. Implementa modal/form per editare i dati esistenti.\n\n2. **Tab Preventivatore**: Aggiungi funzionalità per creare un nuovo cliente direttamente dal preventivatore. Implementa un pulsante \"Nuovo Cliente\" e modal con form per aggiungere clienti senza dover andare nella sezione Gestione Clienti.\n\n3. **Tab Pipeline Vendite**: Migliora la chiarezza della funzione spiegando meglio cosa fa. La pipeline dovrebbe mostrare il flusso delle opportunità di vendita attraverso le fasi (Lead → Qualifica → Offerta → Chiusura) con drag & drop per spostare le opportunità tra le fasi. Aggiungi descrizioni e help text per rendere più chiaro l'utilizzo.\n\nMantieni l'integrazione Supabase e il design coerente con il resto dell'app.",
         "task_type": "general",
         "code": "",
         "result": "",
@@ -13,7 +13,7 @@
         "is_finished": true,
         "assignee": "Alex",
         "start_at": 1759224943.831839,
-        "end_at": 1759229419.6146352
+        "end_at": 1759245076.716894
       },
       "current_task_id": "1",
       "2": {
@@ -120,7 +120,16 @@
     "68": 1,
     "69": 1,
     "70": 1,
-    "71": 1
+    "71": 1,
+    "72": 1,
+    "73": 1,
+    "74": 1,
+    "76": 1,
+    "75": 1,
+    "77": 1,
+    "78": 1,
+    "79": 1,
+    "80": 1
   },
   "preview_servers": {},
   "preview_server": {
