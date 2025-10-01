@@ -36,6 +36,7 @@ export type LottoStato =
   | 'SOSPESO'
   | 'COMPLETATO'
   | 'CHIUSO';
+
 export interface Lotto {
   id: string;
   codice_lotto: string;
@@ -117,7 +118,8 @@ export interface Contratto {
 }
 
 export type CostCategoria = 'PERSONALE' | 'VEICOLO' | 'OMBRELLI' | 'STAZIONI' | 'MARKETING' | 'PERMESSI' | 'PERDITE' | 'ALTRO';
-export type CostCadenza = 'UNA_TANTUM' | 'MENSILE' | 'LOTTO' | 'ANNUALE';
+export type CostTipo = 'CAPEX' | 'OPEX';
+export type CostFrequenza = 'MENSILE' | 'TRIMESTRALE' | 'SEMESTRALE' | 'ANNUALE' | 'UNA_TANTUM';
 
 export interface CostItem {
   id: string;
@@ -125,7 +127,11 @@ export interface CostItem {
   categoria: CostCategoria;
   descrizione: string;
   importo: number;
-  cadenza: CostCadenza;
+  tipo: CostTipo;
+  frequenza: CostFrequenza;
+  mesi_pagamento: string;
+  kpi?: string;
+  note?: string | null;
   data_competenza: string;
   ricorrente: boolean;
   created_at: string;

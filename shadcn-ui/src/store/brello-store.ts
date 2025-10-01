@@ -7,7 +7,10 @@ import type {
   SponsorshipStazione,
   Opportunita,
   Contratto,
+  CostCategoria,
+  CostFrequenza,
   CostItem,
+  CostTipo,
   MovimentoCassa,
   KPISnapshot,
   DashboardData,
@@ -43,6 +46,50 @@ const buildLottoInsertPayload = (lotto: LottoInput) => ({
   soglia_go_nogo: 70,
   target_ricavo: 0,
 });
+
+const COSTI_DEFAULTS: Record<CostCategoria, Pick<CostItem, 'tipo' | 'frequenza' | 'mesi_pagamento' | 'kpi' | 'note'>> = {
+  PERSONALE: { tipo: 'OPEX', frequenza: 'MENSILE', mesi_pagamento: 'Gen–Dic', kpi: 'Costo personale', note: 'Squadra operativa e oneri' },
+  VEICOLO: { tipo: 'OPEX', frequenza: 'MENSILE', mesi_pagamento: 'Gen–Dic', kpi: 'Logistica urbana', note: 'Noleggio e gestione veicolo' },
+  OMBRELLI: { tipo: 'CAPEX', frequenza: 'TRIMESTRALE', mesi_pagamento: 'Gen/Mag/Set', kpi: 'Asset disponibili', note: 'Rinnovo stock stagionale' },
+  STAZIONI: { tipo: 'CAPEX', frequenza: 'UNA_TANTUM', mesi_pagamento: 'Gen', kpi: 'Installazioni attive', note: 'Capex di avvio progetto' },
+  MARKETING: { tipo: 'OPEX', frequenza: 'TRIMESTRALE', mesi_pagamento: 'Gen/Apr/Ott', kpi: 'Lead generati', note: 'Campagne drive-to-store' },
+  PERMESSI: { tipo: 'OPEX', frequenza: 'SEMESTRALE', mesi_pagamento: 'Gen/Lug', kpi: 'Conformità operativa', note: 'Permessi e assicurazioni obbligatorie' },
+  PERDITE: { tipo: 'OPEX', frequenza: 'TRIMESTRALE', mesi_pagamento: 'Post-lotto', kpi: 'Tasso perdite', note: 'Accantonamento a consuntivo lotto' },
+  ALTRO: { tipo: 'OPEX', frequenza: 'ANNUALE', mesi_pagamento: 'Gen', kpi: 'Allocazione costi', note: 'Voce generica da dettagliare' },
+};
+
+const getCostDefaults = (categoria: CostCategoria) => COSTI_DEFAULTS[categoria] ?? COSTI_DEFAULTS.ALTRO;
+
+const sanitizeCostText = (value: string | null | undefined, fallback: string) => {
+  const trimmed = (value ?? '').trim();
+  return trimmed.length > 0 ? trimmed : fallback;
+};
+
+const normalizeCostRecord = (raw: any): CostItem => {
+  const defaults = getCostDefaults(raw.categoria as CostCategoria);
+  const { cadenza, ...rest } = raw;
+
+  return {
+    ...rest,
+    tipo: rest.tipo ?? defaults.tipo,
+    frequenza: ((rest.frequenza ?? cadenza ?? defaults.frequenza) as CostFrequenza),
+    mesi_pagamento: sanitizeCostText(rest.mesi_pagamento, defaults.mesi_pagamento),
+    kpi: sanitizeCostText(rest.kpi, defaults.kpi),
+    note: sanitizeCostText(rest.note, defaults.note),
+  };
+};
+
+const buildCostPayload = (cost: Omit<CostItem, 'id' | 'created_at'>): Omit<CostItem, 'id' | 'created_at'> => {
+  const defaults = getCostDefaults(cost.categoria);
+  return {
+    ...cost,
+    tipo: cost.tipo ?? defaults.tipo,
+    frequenza: cost.frequenza ?? defaults.frequenza,
+    mesi_pagamento: sanitizeCostText(cost.mesi_pagamento, defaults.mesi_pagamento),
+    kpi: sanitizeCostText(cost.kpi, defaults.kpi),
+    note: sanitizeCostText(cost.note, defaults.note),
+  };
+};
 
 interface BrelloState {
   // Core Data
@@ -323,9 +370,10 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
         .from(TABLES.COSTI)
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) handleSupabaseError(error, 'Load costi');
-      set({ costi: data || [] });
+
+      set({ costi: (data ?? []).map(normalizeCostRecord) });
     } catch (error: any) {
       handleSupabaseError(error, 'Load costi');
     }
@@ -470,15 +518,18 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
   
   addCostItem: async (costData) => {
     try {
+      const payload = buildCostPayload(costData);
       const { data, error } = await supabase
         .from(TABLES.COSTI)
-        .insert([costData])
+        .insert([payload])
         .select()
         .single();
-      
+
       if (error) handleSupabaseError(error, 'Add cost item');
-      
-      set(state => ({ costi: [data, ...state.costi] }));
+
+      if (!data) return;
+
+      set(state => ({ costi: [normalizeCostRecord(data), ...state.costi] }));
     } catch (error: any) {
       handleSupabaseError(error, 'Add cost item');
     }
@@ -486,17 +537,29 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
   
   updateCostItem: async (id, updates) => {
     try {
+      const existing = get().costi.find(c => c.id === id);
+      if (!existing) throw new Error('Cost item not found');
+
+      const { id: _id, created_at: _created_at, ...existingFields } = existing;
+      const payload = buildCostPayload({
+        ...existingFields,
+        ...updates,
+      } as Omit<CostItem, 'id' | 'created_at'>);
+
       const { data, error } = await supabase
         .from(TABLES.COSTI)
-        .update(updates)
+        .update(payload)
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) handleSupabaseError(error, 'Update cost item');
-      
+      if (!data) return;
+
+      const normalized = normalizeCostRecord(data);
+
       set(state => ({
-        costi: state.costi.map(c => c.id === id ? data : c)
+        costi: state.costi.map(c => c.id === id ? normalized : c)
       }));
     } catch (error: any) {
       handleSupabaseError(error, 'Update cost item');
@@ -972,7 +1035,11 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
           categoria: 'PERSONALE',
           descrizione: 'Stipendio operatore + contributi',
           importo: 25800,
-          cadenza: 'ANNUALE',
+          tipo: 'OPEX',
+          frequenza: 'MENSILE',
+          mesi_pagamento: 'Gen–Dic',
+          kpi: 'Costo personale',
+          note: 'Squadra operativa e oneri',
           data_competenza: '2025-01-01',
           ricorrente: true
         },
@@ -980,7 +1047,11 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
           categoria: 'VEICOLO',
           descrizione: 'Noleggio furgone + carburante',
           importo: 6514,
-          cadenza: 'ANNUALE',
+          tipo: 'OPEX',
+          frequenza: 'MENSILE',
+          mesi_pagamento: 'Gen–Dic',
+          kpi: 'Logistica urbana',
+          note: 'Noleggio e gestione veicolo',
           data_competenza: '2025-01-01',
           ricorrente: true
         },
@@ -988,7 +1059,11 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
           categoria: 'OMBRELLI',
           descrizione: 'Acquisto ombrelli personalizzati',
           importo: 3600,
-          cadenza: 'ANNUALE',
+          tipo: 'CAPEX',
+          frequenza: 'TRIMESTRALE',
+          mesi_pagamento: 'Gen/Mag/Set',
+          kpi: 'Asset disponibili',
+          note: 'Rinnovo stock stagionale',
           data_competenza: '2025-01-01',
           ricorrente: true
         },
@@ -996,7 +1071,11 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
           categoria: 'STAZIONI',
           descrizione: 'Realizzazione rastrelliere',
           importo: 5000,
-          cadenza: 'ANNUALE',
+          tipo: 'CAPEX',
+          frequenza: 'UNA_TANTUM',
+          mesi_pagamento: 'Gen',
+          kpi: 'Installazioni attive',
+          note: 'Capex di avvio progetto',
           data_competenza: '2025-01-01',
           ricorrente: false
         },
@@ -1004,7 +1083,11 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
           categoria: 'MARKETING',
           descrizione: 'Promozione locale e materiali',
           importo: 3000,
-          cadenza: 'ANNUALE',
+          tipo: 'OPEX',
+          frequenza: 'TRIMESTRALE',
+          mesi_pagamento: 'Gen/Apr/Ott',
+          kpi: 'Lead generati',
+          note: 'Campagne drive-to-store',
           data_competenza: '2025-01-01',
           ricorrente: true
         },
@@ -1012,7 +1095,11 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
           categoria: 'PERMESSI',
           descrizione: 'Permessi, assicurazioni, manutenzioni',
           importo: 2500,
-          cadenza: 'ANNUALE',
+          tipo: 'OPEX',
+          frequenza: 'SEMESTRALE',
+          mesi_pagamento: 'Gen/Lug',
+          kpi: 'Conformità operativa',
+          note: 'Permessi e assicurazioni obbligatorie',
           data_competenza: '2025-01-01',
           ricorrente: true
         },
@@ -1020,7 +1107,11 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
           categoria: 'PERDITE',
           descrizione: 'Fondo perdite/danni ombrelli',
           importo: 300,
-          cadenza: 'ANNUALE',
+          tipo: 'OPEX',
+          frequenza: 'TRIMESTRALE',
+          mesi_pagamento: 'Post-lotto',
+          kpi: 'Tasso perdite',
+          note: 'Accantonamento a consuntivo lotto',
           data_competenza: '2025-01-01',
           ricorrente: true
         }

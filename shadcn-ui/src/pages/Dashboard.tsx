@@ -34,12 +34,14 @@ export default function Dashboard() {
   } = useBrelloStore();
 
   // Calculate KPIs
+  const totaleCostiAnnui = costi.reduce((sum, costo) => sum + costo.importo, 0);
+
   const kpis = {
     totale_clienti: clienti.length,
     clienti_attivi: clienti.filter(c => c.attivo).length,
     opportunita_attive: opportunita.length,
     valore_pipeline: opportunita.reduce((sum, o) => sum + o.valore_previsto, 0),
-    costi_mensili: costi.reduce((sum, c) => sum + (c.cadenza === 'MENSILE' ? c.importo : c.importo / 12), 0),
+    costi_mensili: totaleCostiAnnui / 12,
     entrate_mese: movimenti_cassa.filter(m => m.tipo === 'ENTRATA').reduce((sum, m) => sum + m.importo, 0),
     margine_medio: 25.5, // Calculated from preventivatore
     tasso_conversione: opportunita.length > 0 ? (opportunita.filter(o => o.fase === 'CHIUSURA').length / opportunita.length) * 100 : 0
