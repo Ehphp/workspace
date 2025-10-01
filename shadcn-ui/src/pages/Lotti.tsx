@@ -62,7 +62,7 @@ export default function Lotti() {
   const filteredLotti = lotti.filter(lotto => {
     const matchesSearch = lotto.codice_lotto.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          lotto.citta.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lotto.indirizzo.toLowerCase().includes(searchTerm.toLowerCase());
+                         (lotto.indirizzo ?? '').toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStato = filterStato === 'all' || lotto.stato === filterStato;
     
@@ -149,11 +149,11 @@ export default function Lotti() {
     setFormData({
       codice_lotto: lotto.codice_lotto,
       citta: lotto.citta,
-      indirizzo: lotto.indirizzo,
+      indirizzo: lotto.indirizzo ?? '',
       stato: lotto.stato,
-      data_inizio: lotto.data_inizio,
-      data_fine: lotto.data_fine,
-      note: lotto.note || ''
+      data_inizio: lotto.data_inizio || lotto.periodo_start || '',
+      data_fine: lotto.data_fine || lotto.periodo_end || '',
+      note: lotto.note ?? ''
     });
     setFormErrors({});
     setIsDialogOpen(true);
@@ -186,8 +186,20 @@ export default function Lotti() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('it-IT');
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/D';
+    const parsed = new Date(dateString);
+    if (Number.isNaN(parsed.getTime())) return 'N/D';
+    return parsed.toLocaleDateString('it-IT');
+  };
+
+  const getLottoStartDate = (lotto: Lotto) => lotto.data_inizio || lotto.periodo_start || '';
+  const getLottoEndDate = (lotto: Lotto) => lotto.data_fine || lotto.periodo_end || '';
+  const getLottoDurationDays = (lotto: Lotto) => {
+    const start = new Date(getLottoStartDate(lotto)).getTime();
+    const end = new Date(getLottoEndDate(lotto)).getTime();
+    if (Number.isNaN(start) || Number.isNaN(end)) return null;
+    return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
   };
 
   if (loading) {
@@ -416,11 +428,13 @@ export default function Lotti() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredLotti.map((lotto) => (
+                  {filteredLotti.map((lotto) => {
+                    const durationDays = getLottoDurationDays(lotto);
+                    return (
                     <TableRow key={lotto.id}>
                       <TableCell className="font-medium">{lotto.codice_lotto}</TableCell>
                       <TableCell>{lotto.citta}</TableCell>
-                      <TableCell>{lotto.indirizzo}</TableCell>
+                      <TableCell>{lotto.indirizzo ?? 'N/D'}</TableCell>
                       <TableCell>
                         <Badge className={getStatoColor(lotto.stato)} variant="outline">
                           {STATI_OPTIONS.find(s => s.value === lotto.stato)?.label}
@@ -428,9 +442,9 @@ export default function Lotti() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div>{formatDate(lotto.data_inizio)} - {formatDate(lotto.data_fine)}</div>
+                          <div>{formatDate(getLottoStartDate(lotto))} - {formatDate(getLottoEndDate(lotto))}</div>
                           <div className="text-gray-500">
-                            {Math.ceil((new Date(lotto.data_fine).getTime() - new Date(lotto.data_inizio).getTime()) / (1000 * 60 * 60 * 24))} giorni
+                            {durationDays !== null ? `${durationDays} giorni` : 'Durata non disponibile'}
                           </div>
                         </div>
                       </TableCell>
@@ -471,7 +485,8 @@ export default function Lotti() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -620,3 +635,4 @@ export default function Lotti() {
     </div>
   );
 }
+

@@ -31,13 +31,9 @@ const normalizeLottoText = (value: string) => value.trim();
 const buildLottoUpdatePayload = (lotto: LottoInput) => ({
   codice_lotto: normalizeLottoText(lotto.codice_lotto),
   citta: normalizeLottoText(lotto.citta),
-  indirizzo: normalizeLottoText(lotto.indirizzo),
   stato: lotto.stato,
-  data_inizio: lotto.data_inizio,
-  data_fine: lotto.data_fine,
   periodo_start: lotto.data_inizio,
   periodo_end: lotto.data_fine,
-  note: lotto.note && lotto.note.trim().length > 0 ? lotto.note.trim() : null,
 });
 
 const buildLottoInsertPayload = (lotto: LottoInput) => ({
@@ -1033,3 +1029,4 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
     if (costiError) handleSupabaseError(costiError, 'Insert sample costi');
   }
 }));
+
