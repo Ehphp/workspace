@@ -54,6 +54,7 @@ pnpm i
 
 ```shell
 pnpm add some_new_dependency
+```
 
 **Start Preview**
 
@@ -66,3 +67,9 @@ pnpm run dev
 ```shell
 pnpm run build
 ```
+
+## Environment Configuration
+
+1. Copia `.env.example` in `.env`.
+2. Imposta `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` con i valori del progetto Supabase.
+3. Riavvia il server di sviluppo dopo ogni modifica alle variabili.
