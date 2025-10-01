@@ -29,19 +29,28 @@ export interface Cliente {
   created_at: string;
 }
 
-export type LottoStato = 'PREVENDITA' | 'ATTIVO' | 'CHIUSO';
-
+export type LottoStato =
+  | 'PIANIFICATO'
+  | 'PREVENDITA'
+  | 'ATTIVO'
+  | 'SOSPESO'
+  | 'COMPLETATO'
+  | 'CHIUSO';
 export interface Lotto {
   id: string;
   codice_lotto: string;
   citta: string;
-  periodo_start: string;
-  periodo_end: string;
+  indirizzo?: string;
+  stato: LottoStato;
+  periodo_start?: string;
+  periodo_end?: string;
+  data_inizio?: string;
+  data_fine?: string;
   inventario_spazi: number;
   stazioni_tot: number;
-  stato: LottoStato;
   soglia_go_nogo: number;
   target_ricavo: number;
+  note?: string | null;
   created_at: string;
 }
 

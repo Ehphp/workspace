@@ -16,6 +16,38 @@ import type {
   ScenarioParams
 } from '@/types';
 
+type LottoInput = {
+  codice_lotto: string;
+  citta: string;
+  indirizzo: string;
+  stato: Lotto['stato'];
+  data_inizio: string;
+  data_fine: string;
+  note?: string;
+};
+
+const normalizeLottoText = (value: string) => value.trim();
+
+const buildLottoUpdatePayload = (lotto: LottoInput) => ({
+  codice_lotto: normalizeLottoText(lotto.codice_lotto),
+  citta: normalizeLottoText(lotto.citta),
+  indirizzo: normalizeLottoText(lotto.indirizzo),
+  stato: lotto.stato,
+  data_inizio: lotto.data_inizio,
+  data_fine: lotto.data_fine,
+  periodo_start: lotto.data_inizio,
+  periodo_end: lotto.data_fine,
+  note: lotto.note && lotto.note.trim().length > 0 ? lotto.note.trim() : null,
+});
+
+const buildLottoInsertPayload = (lotto: LottoInput) => ({
+  ...buildLottoUpdatePayload(lotto),
+  inventario_spazi: 18,
+  stazioni_tot: 10,
+  soglia_go_nogo: 70,
+  target_ricavo: 0,
+});
+
 interface BrelloState {
   // Core Data
   clienti: Cliente[];
@@ -60,6 +92,9 @@ interface BrelloState {
   updateOpportunita: (id: string, updates: Partial<Opportunita>) => Promise<void>;
   updateOpportunitaFase: (id: string, fase: Opportunita['fase']) => Promise<void>;
   deleteOpportunita: (id: string) => Promise<void>;
+  addLotto: (lotto: LottoInput) => Promise<void>;
+  updateLotto: (id: string, lotto: LottoInput) => Promise<void>;
+  deleteLotto: (id: string) => Promise<void>;
   
   addCostItem: (cost: Omit<CostItem, 'id' | 'created_at'>) => Promise<void>;
   updateCostItem: (id: string, updates: Partial<CostItem>) => Promise<void>;
@@ -166,6 +201,70 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
     }
   },
   
+  addLotto: async (lottoInput) => {
+    try {
+      const payload = buildLottoInsertPayload(lottoInput);
+      const { data, error } = await supabase
+        .from(TABLES.LOTTI)
+        .insert([payload])
+        .select('*')
+        .single();
+
+      if (error) throw error;
+      if (!data) throw new Error('Add lotto failed: nessun dato restituito');
+
+      set((state) => ({
+        lotti: [data, ...state.lotti],
+      }));
+    } catch (error: any) {
+      handleSupabaseError(error, 'Add lotto');
+    }
+  },
+
+  updateLotto: async (id, lottoInput) => {
+    try {
+      const payload = buildLottoUpdatePayload(lottoInput);
+      const { data, error } = await supabase
+        .from(TABLES.LOTTI)
+        .update(payload)
+        .eq('id', id)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+      if (!data) throw new Error('Update lotto failed: nessun dato restituito');
+
+      set((state) => ({
+        lotti: state.lotti.map((lotto) => (lotto.id === id ? data : lotto)),
+        currentLotto: state.currentLotto?.id === id ? data : state.currentLotto,
+      }));
+    } catch (error: any) {
+      handleSupabaseError(error, 'Update lotto');
+    }
+  },
+
+  deleteLotto: async (id) => {
+    try {
+      const { error } = await supabase
+        .from(TABLES.LOTTI)
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      set((state) => {
+        const updatedLotti = state.lotti.filter((lotto) => lotto.id !== id);
+        const nextCurrent = state.currentLotto?.id === id ? updatedLotti[0] || null : state.currentLotto;
+        return {
+          lotti: updatedLotti,
+          currentLotto: nextCurrent,
+        };
+      });
+    } catch (error: any) {
+      handleSupabaseError(error, 'Delete lotto');
+    }
+  },
+
   loadSpazi: async () => {
     try {
       const { data, error } = await supabase
