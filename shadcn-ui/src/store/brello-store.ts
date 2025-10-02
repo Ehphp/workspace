@@ -48,12 +48,12 @@ const buildLottoInsertPayload = (lotto: LottoInput) => ({
 });
 
 const COSTI_DEFAULTS: Record<CostCategoria, Pick<CostItem, 'tipo' | 'frequenza' | 'mesi_pagamento' | 'kpi' | 'note'>> = {
-  PERSONALE: { tipo: 'OPEX', frequenza: 'MENSILE', mesi_pagamento: 'Gen–Dic', kpi: 'Costo personale', note: 'Squadra operativa e oneri' },
-  VEICOLO: { tipo: 'OPEX', frequenza: 'MENSILE', mesi_pagamento: 'Gen–Dic', kpi: 'Logistica urbana', note: 'Noleggio e gestione veicolo' },
+  PERSONALE: { tipo: 'OPEX', frequenza: 'MENSILE', mesi_pagamento: 'Gen-Dic', kpi: 'Costo personale', note: 'Squadra operativa e oneri' },
+  VEICOLO: { tipo: 'OPEX', frequenza: 'MENSILE', mesi_pagamento: 'Gen-Dic', kpi: 'Logistica urbana', note: 'Noleggio e gestione veicolo' },
   OMBRELLI: { tipo: 'CAPEX', frequenza: 'TRIMESTRALE', mesi_pagamento: 'Gen/Mag/Set', kpi: 'Asset disponibili', note: 'Rinnovo stock stagionale' },
   STAZIONI: { tipo: 'CAPEX', frequenza: 'UNA_TANTUM', mesi_pagamento: 'Gen', kpi: 'Installazioni attive', note: 'Capex di avvio progetto' },
   MARKETING: { tipo: 'OPEX', frequenza: 'TRIMESTRALE', mesi_pagamento: 'Gen/Apr/Ott', kpi: 'Lead generati', note: 'Campagne drive-to-store' },
-  PERMESSI: { tipo: 'OPEX', frequenza: 'SEMESTRALE', mesi_pagamento: 'Gen/Lug', kpi: 'Conformità operativa', note: 'Permessi e assicurazioni obbligatorie' },
+  PERMESSI: { tipo: 'OPEX', frequenza: 'SEMESTRALE', mesi_pagamento: 'Gen/Lug', kpi: 'Conformita operativa', note: 'Permessi e assicurazioni obbligatorie' },
   PERDITE: { tipo: 'OPEX', frequenza: 'TRIMESTRALE', mesi_pagamento: 'Post-lotto', kpi: 'Tasso perdite', note: 'Accantonamento a consuntivo lotto' },
   ALTRO: { tipo: 'OPEX', frequenza: 'ANNUALE', mesi_pagamento: 'Gen', kpi: 'Allocazione costi', note: 'Voce generica da dettagliare' },
 };
@@ -92,7 +92,7 @@ const buildCostPayload = (cost: Omit<CostItem, 'id' | 'created_at'>): Omit<CostI
 };
 
 const mapCostPayloadToDb = (cost: Omit<CostItem, 'id' | 'created_at'>) => {
-  const { frequenza, ...rest } = cost;
+  const { frequenza, tipo: _tipo, mesi_pagamento: _mesiPagamento, kpi: _kpi, note: _note, ...rest } = cost;
   return {
     ...rest,
     cadenza: frequenza,
@@ -209,7 +209,7 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
         get().loadCosti(),
         get().loadMovimentiCassa(),
         get().loadKPISnapshots()
-      ]);
+      ].map((cost) => mapCostPayloadToDb(cost as unknown as Omit<CostItem, 'id' | 'created_at'>)));
       
       // Set current lotto to the first one found
       const { lotti } = get();
@@ -1031,7 +1031,7 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
           probabilita_perc: 80,
           data_chiusura_prevista: '2025-09-25'
         }
-      ]);
+      ].map((cost) => mapCostPayloadToDb(cost as unknown as Omit<CostItem, 'id' | 'created_at'>)));
     
     if (opportunitaError) handleSupabaseError(opportunitaError, 'Insert sample opportunita');
     
@@ -1045,7 +1045,7 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
           importo: 25800,
           tipo: 'OPEX',
           frequenza: 'MENSILE',
-          mesi_pagamento: 'Gen–Dic',
+          mesi_pagamento: 'Gen-Dic',
           kpi: 'Costo personale',
           note: 'Squadra operativa e oneri',
           data_competenza: '2025-01-01',
@@ -1057,7 +1057,7 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
           importo: 6514,
           tipo: 'OPEX',
           frequenza: 'MENSILE',
-          mesi_pagamento: 'Gen–Dic',
+          mesi_pagamento: 'Gen-Dic',
           kpi: 'Logistica urbana',
           note: 'Noleggio e gestione veicolo',
           data_competenza: '2025-01-01',
@@ -1106,7 +1106,7 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
           tipo: 'OPEX',
           frequenza: 'SEMESTRALE',
           mesi_pagamento: 'Gen/Lug',
-          kpi: 'Conformità operativa',
+          kpi: 'Conformita operativa',
           note: 'Permessi e assicurazioni obbligatorie',
           data_competenza: '2025-01-01',
           ricorrente: true
@@ -1123,7 +1123,7 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
           data_competenza: '2025-01-01',
           ricorrente: true
         }
-      ]);
+      ].map((cost) => mapCostPayloadToDb(cost as unknown as Omit<CostItem, 'id' | 'created_at'>)));
     
     if (costiError) handleSupabaseError(costiError, 'Insert sample costi');
   }
