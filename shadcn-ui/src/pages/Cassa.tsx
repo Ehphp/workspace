@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -84,6 +85,105 @@ const formatFrequenza = (frequenza?: CostFrequenza | null) => {
 const getTipoBadgeVariant = (tipo: CostTipo): 'default' | 'secondary' =>
   tipo === 'CAPEX' ? 'secondary' : 'default';
 
+const MONTH_LABELS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+
+const MONTH_MATCHERS = [
+  { key: 'gen', value: 'Gen' },
+  { key: 'feb', value: 'Feb' },
+  { key: 'mar', value: 'Mar' },
+  { key: 'apr', value: 'Apr' },
+  { key: 'mag', value: 'Mag' },
+  { key: 'giu', value: 'Giu' },
+  { key: 'lug', value: 'Lug' },
+  { key: 'ago', value: 'Ago' },
+  { key: 'set', value: 'Set' },
+  { key: 'ott', value: 'Ott' },
+  { key: 'nov', value: 'Nov' },
+  { key: 'dic', value: 'Dic' }
+];
+
+const FALLBACK_MONTHS_BY_FREQUENZA: Record<CostFrequenza, string[]> = {
+  MENSILE: MONTH_LABELS,
+  TRIMESTRALE: ['Gen', 'Apr', 'Lug', 'Ott'],
+  SEMESTRALE: ['Gen', 'Lug'],
+  ANNUALE: ['Gen'],
+  UNA_TANTUM: ['Gen']
+};
+
+const normalizeMonthToken = (raw: string): string | null => {
+  const cleaned = raw
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z]/g, '');
+
+  if (!cleaned) return null;
+
+  for (const matcher of MONTH_MATCHERS) {
+    if (cleaned.startsWith(matcher.key)) {
+      return matcher.value;
+    }
+  }
+
+  return null;
+};
+
+const expandRange = (start: string, end: string): string[] => {
+  const startIndex = MONTH_LABELS.indexOf(start);
+  const endIndex = MONTH_LABELS.indexOf(end);
+
+  if (startIndex === -1 || endIndex === -1) return [];
+  if (startIndex <= endIndex) return MONTH_LABELS.slice(startIndex, endIndex + 1);
+
+  return [...MONTH_LABELS.slice(startIndex), ...MONTH_LABELS.slice(0, endIndex + 1)];
+};
+
+const parseMesiPagamentoToMonths = (value: string | null | undefined, frequenza: CostFrequenza): string[] => {
+  if (!value) return [...FALLBACK_MONTHS_BY_FREQUENZA[frequenza]];
+
+  const sanitized = value.replace(/[\u2013\u2014]/g, '-');
+  const tokens = new Set<string>();
+  const parts = sanitized.split(/[\/,]/);
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+
+    const rangeTokens = trimmed.split('-');
+    if (rangeTokens.length === 2) {
+      const start = normalizeMonthToken(rangeTokens[0]);
+      const end = normalizeMonthToken(rangeTokens[1]);
+      if (start && end) {
+        expandRange(start, end).forEach(month => tokens.add(month));
+        continue;
+      }
+    }
+
+    const words = trimmed.split(/\s+/);
+    let matched = false;
+    for (const word of words) {
+      const month = normalizeMonthToken(word);
+      if (month) {
+        tokens.add(month);
+        matched = true;
+      }
+    }
+
+    if (!matched) {
+      const month = normalizeMonthToken(trimmed);
+      if (month) tokens.add(month);
+    }
+  }
+
+  const months = Array.from(tokens).sort((a, b) => MONTH_LABELS.indexOf(a) - MONTH_LABELS.indexOf(b));
+  if (months.length > 0) {
+    return months;
+  }
+
+  return [...FALLBACK_MONTHS_BY_FREQUENZA[frequenza]];
+};
+
+
 export default function Cassa() {
   const { 
     costi, 
@@ -107,6 +207,9 @@ export default function Cassa() {
   const [isMovimentoDialogOpen, setIsMovimentoDialogOpen] = useState(false);
   const [movimentoFormData, setMovimentoFormData] = useState<MovimentoFormData>(initialMovimentoFormData);
   const [movimentoFormErrors, setMovimentoFormErrors] = useState<Record<string, string>>({});
+
+  const [ricavoPerLotto, setRicavoPerLotto] = useState<number>(19300);
+  const [mesiLottiAttivi, setMesiLottiAttivi] = useState<string[]>(['Gen', 'Apr', 'Ott']);
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -134,6 +237,67 @@ export default function Cassa() {
       }
     }, 0) / 12
   };
+
+  const usciteMensili = useMemo(() => {
+    const base = MONTH_LABELS.reduce((acc, month) => {
+      acc[month] = 0;
+      return acc;
+    }, {} as Record<string, number>);
+
+    costi.forEach((costo) => {
+      const months = parseMesiPagamentoToMonths(costo.mesi_pagamento, costo.frequenza);
+      const monthsToUse = months.length > 0 ? months : FALLBACK_MONTHS_BY_FREQUENZA[costo.frequenza];
+      const occurrences = monthsToUse.length || 1;
+      const quota = occurrences > 0 ? costo.importo / occurrences : 0;
+
+      monthsToUse.forEach((month) => {
+        if (base[month] === undefined) base[month] = 0;
+        base[month] += quota;
+      });
+    });
+
+    return base;
+  }, [costi]);
+
+  const entrateMensili = useMemo(() => {
+    const base = MONTH_LABELS.reduce((acc, month) => {
+      acc[month] = 0;
+      return acc;
+    }, {} as Record<string, number>);
+
+    mesiLottiAttivi.forEach((month) => {
+      if (!MONTH_LABELS.includes(month)) return;
+      base[month] += ricavoPerLotto;
+    });
+
+    return base;
+  }, [mesiLottiAttivi, ricavoPerLotto]);
+
+  const cashflowRows = useMemo(() => {
+    let cumulato = 0;
+
+    return MONTH_LABELS.map((month) => {
+      const entrate = entrateMensili[month] ?? 0;
+      const uscite = usciteMensili[month] ?? 0;
+      const saldo = entrate - uscite;
+      cumulato += saldo;
+
+      return { month, entrate, uscite, saldo, cumulato };
+    });
+  }, [entrateMensili, usciteMensili]);
+
+  const cashflowTotals = useMemo(() => {
+    const entrate = cashflowRows.reduce((sum, row) => sum + row.entrate, 0);
+    const uscite = cashflowRows.reduce((sum, row) => sum + row.uscite, 0);
+    const cumulato = cashflowRows.length > 0 ? cashflowRows[cashflowRows.length - 1].cumulato : 0;
+
+    return {
+      entrate,
+      uscite,
+      saldo: entrate - uscite,
+      cumulato,
+    };
+  }, [cashflowRows]);
 
   const totaleImportiCosti = totaliCosti.annuali;
   const formatPercent = (ratio: number) =>
@@ -512,6 +676,117 @@ export default function Cassa() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <section className="space-y-4">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Vista manageriale</h2>
+            <p className="text-sm text-gray-600">Proiezione mensile di entrate e uscite</p>
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Parametri ricavi</CardTitle>
+            <CardDescription>Adatta i ricavi previsti per analizzare il cashflow</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="ricavo-per-lotto">Ricavo per lotto</Label>
+                <Input
+                  id="ricavo-per-lotto"
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={ricavoPerLotto}
+                  onChange={(event) => setRicavoPerLotto(Number(event.target.value) || 0)}
+                />
+                <p className="text-xs text-gray-500">Valore applicato ai mesi selezionati</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Mesi lotti attivi</Label>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+                  {MONTH_LABELS.map((month) => {
+                    const checked = mesiLottiAttivi.includes(month);
+                    return (
+                      <label
+                        key={month}
+                        className="flex items-center space-x-2 rounded border border-gray-200 bg-white px-2 py-1 text-sm shadow-sm transition hover:border-gray-300"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(value) => {
+                            setMesiLottiAttivi((current) => {
+                              const isChecked = value === true;
+                              if (isChecked) {
+                                if (current.includes(month)) return current;
+                                return [...current, month].sort((a, b) => MONTH_LABELS.indexOf(a) - MONTH_LABELS.indexOf(b));
+                              }
+                              return current.filter((m) => m !== month);
+                            });
+                          }}
+                        />
+                        <span>{month}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="mb-2 text-sm font-medium text-gray-700">Cashflow mensile</h3>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Mese</TableHead>
+                      <TableHead className="text-right">Entrate</TableHead>
+                      <TableHead className="text-right">Uscite</TableHead>
+                      <TableHead className="text-right">Saldo</TableHead>
+                      <TableHead className="text-right">Cumulato</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {cashflowRows.map((row) => (
+                      <TableRow key={row.month}>
+                        <TableCell>{row.month}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(row.entrate)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(row.uscite)}</TableCell>
+                        <TableCell
+                          className={"text-right font-medium " + (row.saldo >= 0 ? 'text-green-600' : 'text-red-600')}>
+                          {formatCurrency(row.saldo)}
+                        </TableCell>
+                        <TableCell
+                          className={"text-right font-semibold " + (row.cumulato >= 0 ? 'text-green-600' : 'text-red-600')}>
+                          {formatCurrency(row.cumulato)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                  <TableFooter>
+                    <TableRow>
+                      <TableCell className="font-medium">Totale</TableCell>
+                      <TableCell className="text-right font-semibold">{formatCurrency(cashflowTotals.entrate)}</TableCell>
+                      <TableCell className="text-right font-semibold">{formatCurrency(cashflowTotals.uscite)}</TableCell>
+                      <TableCell
+                        className={"text-right font-semibold " + (cashflowTotals.saldo >= 0 ? 'text-green-600' : 'text-red-600')}>
+                        {formatCurrency(cashflowTotals.saldo)}
+                      </TableCell>
+                      <TableCell
+                        className={"text-right font-semibold " + (cashflowTotals.cumulato >= 0 ? 'text-green-600' : 'text-red-600')}>
+                        {formatCurrency(cashflowTotals.cumulato)}
+                      </TableCell>
+                    </TableRow>
+                  </TableFooter>
+                </Table>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
       {/* Add Movement Dialog */}
       <Dialog open={isMovimentoDialogOpen} onOpenChange={setIsMovimentoDialogOpen}>
