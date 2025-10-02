@@ -8,10 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBrelloStore } from '@/store/brello-store';
-import { CostItem, MovimentoCassa } from '@/types';
+import { CostFrequenza, CostItem, CostTipo, MovimentoCassa } from '@/types';
 import { Plus, TrendingUp, TrendingDown, Euro, Calendar, Edit, Trash2, DollarSign, Info, Calculator, BarChart3, ArrowRight, Lightbulb, GitBranch } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -68,6 +68,22 @@ const CATEGORIE_MOVIMENTI = [
   'ALTRO'
 ];
 
+const COST_FREQUENZA_LABELS: Record<CostFrequenza, string> = {
+  MENSILE: 'Mensile',
+  TRIMESTRALE: 'Trimestrale',
+  SEMESTRALE: 'Semestrale',
+  ANNUALE: 'Annuale',
+  UNA_TANTUM: 'Una Tantum'
+};
+
+const formatFrequenza = (frequenza?: CostFrequenza | null) => {
+  if (!frequenza) return 'N/D';
+  return COST_FREQUENZA_LABELS[frequenza] ?? frequenza;
+};
+
+const getTipoBadgeVariant = (tipo: CostTipo): 'default' | 'secondary' =>
+  tipo === 'CAPEX' ? 'secondary' : 'default';
+
 export default function Cassa() {
   const { 
     costi, 
@@ -107,15 +123,25 @@ export default function Cassa() {
   const totaliCosti = {
     annuali: costi.reduce((sum, c) => sum + c.importo, 0),
     mensili: costi.reduce((sum, c) => {
-      switch (c.cadenza) {
+      const frequenza = (c.frequenza ?? (c as { cadenza?: CostFrequenza }).cadenza ?? 'ANNUALE') as CostFrequenza;
+      switch (frequenza) {
         case 'MENSILE': return sum + (c.importo * 12);
         case 'TRIMESTRALE': return sum + (c.importo * 4);
-        case 'ANNUALE': return sum + c.importo;
-        case 'UNA_TANTUM': return sum + c.importo;
+        case 'SEMESTRALE': return sum + (c.importo * 2);
+        case 'ANNUALE':
+        case 'UNA_TANTUM':
         default: return sum + c.importo;
       }
     }, 0) / 12
   };
+
+  const totaleImportiCosti = totaliCosti.annuali;
+  const formatPercent = (ratio: number) =>
+    new Intl.NumberFormat('it-IT', {
+      style: 'percent',
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1
+    }).format(ratio);
 
   const totaliMovimenti = {
     entrate: movimenti_cassa.filter(m => m.tipo === 'ENTRATA').reduce((sum, m) => sum + m.importo, 0),
@@ -352,6 +378,7 @@ export default function Cassa() {
                         <TableHead>Descrizione</TableHead>
                         <TableHead>Categoria</TableHead>
                         <TableHead className="text-right">Importo</TableHead>
+
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -405,10 +432,14 @@ export default function Cassa() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Categoria</TableHead>
+                        <TableHead>Tipo</TableHead>
                         <TableHead>Descrizione</TableHead>
-                        <TableHead>Cadenza</TableHead>
-                        <TableHead>Data</TableHead>
+                        <TableHead>Frequenza</TableHead>
+                        <TableHead>Mese Pagamento</TableHead>
+                        <TableHead>KPI</TableHead>
+                        <TableHead>Note</TableHead>
                         <TableHead className="text-right">Importo</TableHead>
+                        <TableHead className="text-right">Percentuale sul Totale</TableHead>
                         <TableHead className="text-right">Azioni</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -418,11 +449,19 @@ export default function Cassa() {
                           <TableCell>
                             <Badge variant="outline">{costo.categoria}</Badge>
                           </TableCell>
+                          <TableCell>
+                            <Badge variant={getTipoBadgeVariant(costo.tipo)}>{costo.tipo}</Badge>
+                          </TableCell>
                           <TableCell>{costo.descrizione}</TableCell>
-                          <TableCell>{costo.cadenza}</TableCell>
-                          <TableCell>{formatDate(costo.data_competenza)}</TableCell>
+                          <TableCell>{formatFrequenza(costo.frequenza)}</TableCell>
+                          <TableCell>{costo.mesi_pagamento || 'N/D'}</TableCell>
+                          <TableCell>{costo.kpi || 'N/D'}</TableCell>
+                          <TableCell className="max-w-xs whitespace-normal text-sm text-gray-600">{costo.note || 'N/D'}</TableCell>
                           <TableCell className="text-right font-medium">
                             {formatCurrency(costo.importo)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatPercent(totaleImportiCosti > 0 ? costo.importo / totaleImportiCosti : 0)}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end space-x-2">
@@ -458,6 +497,14 @@ export default function Cassa() {
                         </TableRow>
                       ))}
                     </TableBody>
+                    <TableFooter>
+                      <TableRow>
+                        <TableCell colSpan={7} className="font-medium">Totale costi</TableCell>
+                        <TableCell className="text-right font-semibold">{formatCurrency(totaleImportiCosti)}</TableCell>
+                        <TableCell className="text-right font-semibold">{totaleImportiCosti > 0 ? formatPercent(1) : formatPercent(0)}</TableCell>
+                        <TableCell />
+                      </TableRow>
+                    </TableFooter>
                   </Table>
                 </div>
               )}
