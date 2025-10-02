@@ -15,27 +15,24 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBrelloStore } from '@/store/brello-store';
-import { CostFrequenza, CostItem, CostTipo, MovimentoCassa } from '@/types';
+import { CostCategoria, CostFrequenza, CostItem, CostTipo, MovimentoCassa } from '@/types';
 import { Plus, TrendingUp, TrendingDown, Euro, Calendar, Edit, Trash2, DollarSign, Info, Calculator, BarChart3, ArrowRight, Lightbulb, GitBranch } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface CostFormData {
-  categoria: string;
+  categoria: CostCategoria;
   descrizione: string;
   importo: number;
-  cadenza: 'MENSILE' | 'TRIMESTRALE' | 'ANNUALE' | 'UNA_TANTUM';
+  tipo: CostTipo;
+  frequenza: CostFrequenza;
+  mesi_pagamento: string;
+  kpi: string;
+  note: string;
   data_competenza: string;
   ricorrente: boolean;
 }
 
-const initialCostFormData: CostFormData = {
-  categoria: '',
-  descrizione: '',
-  importo: 0,
-  cadenza: 'ANNUALE',
-  data_competenza: new Date().toISOString().split('T')[0],
-  ricorrente: true
-};
+
 
 interface MovimentoFormData {
   tipo: 'ENTRATA' | 'USCITA';
@@ -110,6 +107,36 @@ const compactCurrencyFormatter = new Intl.NumberFormat('it-IT', {
   notation: 'compact',
   maximumFractionDigits: 1,
 });
+
+const COSTI_FORM_DEFAULTS: Record<CostCategoria, Pick<CostFormData, 'tipo' | 'frequenza' | 'mesi_pagamento' | 'kpi' | 'note'>> = {
+  PERSONALE: { tipo: 'OPEX', frequenza: 'MENSILE', mesi_pagamento: 'Gen-Dic', kpi: 'Costo personale', note: 'Squadra operativa e oneri' },
+  VEICOLO: { tipo: 'OPEX', frequenza: 'MENSILE', mesi_pagamento: 'Gen-Dic', kpi: 'Logistica urbana', note: 'Noleggio e gestione veicolo' },
+  OMBRELLI: { tipo: 'CAPEX', frequenza: 'TRIMESTRALE', mesi_pagamento: 'Gen/Mag/Set', kpi: 'Asset disponibili', note: 'Rinnovo stock stagionale' },
+  STAZIONI: { tipo: 'CAPEX', frequenza: 'UNA_TANTUM', mesi_pagamento: 'Gen', kpi: 'Installazioni attive', note: 'Capex di avvio progetto' },
+  MARKETING: { tipo: 'OPEX', frequenza: 'TRIMESTRALE', mesi_pagamento: 'Gen/Apr/Ott', kpi: 'Lead generati', note: 'Campagne drive-to-store' },
+  PERMESSI: { tipo: 'OPEX', frequenza: 'SEMESTRALE', mesi_pagamento: 'Gen/Lug', kpi: 'Conformita operativa', note: 'Permessi e assicurazioni obbligatorie' },
+  PERDITE: { tipo: 'OPEX', frequenza: 'TRIMESTRALE', mesi_pagamento: 'Post-lotto', kpi: 'Tasso perdite', note: 'Accantonamento a consuntivo lotto' },
+  ALTRO: { tipo: 'OPEX', frequenza: 'ANNUALE', mesi_pagamento: 'Gen', kpi: 'Allocazione costi', note: 'Voce generica da dettagliare' },
+};
+
+const getCostFormDefaults = (categoria: CostCategoria) => COSTI_FORM_DEFAULTS[categoria] ?? COSTI_FORM_DEFAULTS.ALTRO;
+
+const createInitialCostFormData = (): CostFormData => {
+  const categoria: CostCategoria = 'PERSONALE';
+  const defaults = getCostFormDefaults(categoria);
+  return {
+    categoria,
+    descrizione: '',
+    importo: 0,
+    tipo: defaults.tipo,
+    frequenza: defaults.frequenza,
+    mesi_pagamento: defaults.mesi_pagamento,
+    kpi: defaults.kpi,
+    note: defaults.note,
+    data_competenza: new Date().toISOString().split('T')[0],
+    ricorrente: true,
+  };
+};
 
 const MONTH_LABELS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
@@ -226,7 +253,7 @@ export default function Cassa() {
   // Cost form state
   const [isCostDialogOpen, setIsCostDialogOpen] = useState(false);
   const [editingCost, setEditingCost] = useState<CostItem | null>(null);
-  const [costFormData, setCostFormData] = useState<CostFormData>(initialCostFormData);
+  const [costFormData, setCostFormData] = useState<CostFormData>(createInitialCostFormData);
   const [costFormErrors, setCostFormErrors] = useState<Record<string, string>>({});
 
   // Movement form state
@@ -238,6 +265,105 @@ export default function Cassa() {
   const [mesiLottiAttivi, setMesiLottiAttivi] = useState<string[]>(['Gen', 'Apr', 'Ott']);
 
   const [submitting, setSubmitting] = useState(false);
+  const isEditingCost = Boolean(editingCost);
+
+  const resetCostForm = () => {
+    setCostFormData(createInitialCostFormData());
+    setCostFormErrors({});
+    setEditingCost(null);
+    setSubmitting(false);
+  };
+
+  const handleCostDialogOpenChange = (open: boolean) => {
+    setIsCostDialogOpen(open);
+    if (!open) {
+      resetCostForm();
+    }
+  };
+
+  const handleCreateCost = () => {
+    resetCostForm();
+    handleCostDialogOpenChange(true);
+  };
+
+  const handleCostCategoryChange = (categoria: CostCategoria) => {
+    const defaults = getCostFormDefaults(categoria);
+    setCostFormData(prev => ({
+      ...prev,
+      categoria,
+      tipo: defaults.tipo,
+      frequenza: defaults.frequenza,
+      mesi_pagamento: defaults.mesi_pagamento,
+      kpi: defaults.kpi,
+      note: defaults.note,
+    }));
+  };
+
+  const normalizeDateInput = (value?: string | null) => {
+    if (!value) return new Date().toISOString().split('T')[0];
+    return value.split('T')[0];
+  };
+
+  const sanitizeOptionalText = (value: string | null | undefined, fallback: string) => {
+    const trimmed = (value ?? '').trim();
+    if (!trimmed || trimmed === 'N/D') return fallback;
+    return trimmed;
+  };
+
+  const handleEditCost = (costo: CostItem) => {
+    const defaults = getCostFormDefaults(costo.categoria);
+    setEditingCost(costo);
+    setCostFormErrors({});
+    setCostFormData({
+      categoria: costo.categoria,
+      descrizione: costo.descrizione ?? '',
+      importo: costo.importo ?? 0,
+      tipo: costo.tipo ?? defaults.tipo,
+      frequenza: costo.frequenza ?? defaults.frequenza,
+      mesi_pagamento: sanitizeOptionalText(costo.mesi_pagamento, defaults.mesi_pagamento),
+      kpi: sanitizeOptionalText(costo.kpi, defaults.kpi),
+      note: sanitizeOptionalText(costo.note, defaults.note),
+      data_competenza: normalizeDateInput(costo.data_competenza),
+      ricorrente: costo.ricorrente ?? true,
+    });
+    handleCostDialogOpenChange(true);
+  };
+
+  const handleCostFieldChange = <K extends keyof CostFormData>(key: K, value: CostFormData[K]) => {
+    setCostFormData(prev => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const handleSaveCost = async () => {
+    setSubmitting(true);
+    try {
+      const payload = {
+        ...costFormData,
+        importo: Number(costFormData.importo) || 0,
+        mesi_pagamento: costFormData.mesi_pagamento.trim(),
+        kpi: costFormData.kpi.trim(),
+        note: costFormData.note.trim(),
+      };
+
+      if (editingCost) {
+        await updateCostItem(editingCost.id, payload);
+        toast.success('Costo aggiornato');
+      } else {
+        await addCostItem(payload);
+        toast.success('Costo aggiunto');
+      }
+
+      handleCostDialogOpenChange(false);
+    } catch (error) {
+      console.error(error);
+      toast.error('Errore durante il salvataggio del costo');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
 
   useEffect(() => {
     if (costi.length === 0 && !loading) {
@@ -404,7 +530,7 @@ export default function Cassa() {
             <Plus className="h-4 w-4 mr-2" />
             Movimento
           </Button>
-          <Button onClick={() => setIsCostDialogOpen(true)}>
+          <Button onClick={handleCreateCost}>
             <Plus className="h-4 w-4 mr-2" />
             Costo
           </Button>
@@ -638,7 +764,7 @@ export default function Cassa() {
                   <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="font-medium text-gray-900 mb-2">Nessun costo definito</h3>
                   <p className="text-gray-500 mb-4">Definisci i costi strutturali per calcolare i margini reali</p>
-                  <Button onClick={() => setIsCostDialogOpen(true)}>
+                  <Button onClick={handleCreateCost}>
                     <Plus className="h-4 w-4 mr-2" />
                     Aggiungi Costo
                   </Button>
@@ -682,7 +808,7 @@ export default function Cassa() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end space-x-2">
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" onClick={() => handleEditCost(costo)} aria-label="Modifica costo">
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <AlertDialog>
@@ -1032,41 +1158,59 @@ export default function Cassa() {
       </Dialog>
 
       {/* Add Cost Dialog */}
-      <Dialog open={isCostDialogOpen} onOpenChange={setIsCostDialogOpen}>
+      <Dialog open={isCostDialogOpen} onOpenChange={handleCostDialogOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nuovo Costo Strutturale</DialogTitle>
+            <DialogTitle>{isEditingCost ? 'Modifica Costo Strutturale' : 'Nuovo Costo Strutturale'}</DialogTitle>
             <DialogDescription>
-              Definisci un costo per il calcolo dei margini
+              {isEditingCost ? 'Aggiorna i dettagli del costo selezionato' : 'Definisci un costo per il calcolo dei margini'}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Categoria *</Label>
-                <Select 
-                  value={costFormData.categoria} 
-                  onValueChange={(value) => setCostFormData({...costFormData, categoria: value})}
+                <Select
+                  value={costFormData.categoria}
+                  onValueChange={(value) => handleCostCategoryChange(value as CostCategoria)}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {CATEGORIE_COSTI.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    {CATEGORIE_COSTI.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
-                <Label>Cadenza *</Label>
-                <Select 
-                  value={costFormData.cadenza} 
-                  onValueChange={(value: 'MENSILE' | 'TRIMESTRALE' | 'ANNUALE' | 'UNA_TANTUM') => 
-                    setCostFormData({...costFormData, cadenza: value})
-                  }
+                <Label>Tipo *</Label>
+                <Select
+                  value={costFormData.tipo}
+                  onValueChange={(value) => handleCostFieldChange('tipo', value as CostTipo)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="OPEX">OPEX</SelectItem>
+                    <SelectItem value="CAPEX">CAPEX</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Frequenza *</Label>
+                <Select
+                  value={costFormData.frequenza}
+                  onValueChange={(value) => handleCostFieldChange('frequenza', value as CostFrequenza)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -1074,10 +1218,20 @@ export default function Cassa() {
                   <SelectContent>
                     <SelectItem value="MENSILE">Mensile</SelectItem>
                     <SelectItem value="TRIMESTRALE">Trimestrale</SelectItem>
+                    <SelectItem value="SEMESTRALE">Semestrale</SelectItem>
                     <SelectItem value="ANNUALE">Annuale</SelectItem>
                     <SelectItem value="UNA_TANTUM">Una Tantum</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Mesi Pagamento</Label>
+                <Input
+                  placeholder="Es. Gen/Apr/Ott"
+                  value={costFormData.mesi_pagamento}
+                  onChange={(e) => handleCostFieldChange('mesi_pagamento', e.target.value)}
+                />
               </div>
             </div>
 
@@ -1085,35 +1239,48 @@ export default function Cassa() {
               <Label>Descrizione *</Label>
               <Input
                 value={costFormData.descrizione}
-                onChange={(e) => setCostFormData({...costFormData, descrizione: e.target.value})}
+                onChange={(e) => handleCostFieldChange('descrizione', e.target.value)}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Importo (€) *</Label>
                 <Input
                   type="number"
                   step="0.01"
                   value={costFormData.importo}
-                  onChange={(e) => setCostFormData({
-                    ...costFormData, 
-                    importo: parseFloat(e.target.value) || 0
-                  })}
+                  onChange={(e) => handleCostFieldChange('importo', parseFloat(e.target.value) || 0)}
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label>Data Competenza *</Label>
                 <Input
                   type="date"
                   value={costFormData.data_competenza}
-                  onChange={(e) => setCostFormData({
-                    ...costFormData, 
-                    data_competenza: e.target.value
-                  })}
+                  onChange={(e) => handleCostFieldChange('data_competenza', e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>KPI</Label>
+              <Input
+                value={costFormData.kpi}
+                onChange={(e) => handleCostFieldChange('kpi', e.target.value)}
+                placeholder="Es. KPI principale"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Note</Label>
+              <Textarea
+                value={costFormData.note}
+                onChange={(e) => handleCostFieldChange('note', e.target.value)}
+                rows={3}
+                placeholder="Dettagli operativi o eccezioni"
+              />
             </div>
 
             <div className="flex items-center space-x-2">
@@ -1121,25 +1288,18 @@ export default function Cassa() {
                 type="checkbox"
                 id="ricorrente"
                 checked={costFormData.ricorrente}
-                onChange={(e) => setCostFormData({
-                  ...costFormData, 
-                  ricorrente: e.target.checked
-                })}
+                onChange={(e) => handleCostFieldChange('ricorrente', e.target.checked)}
               />
               <Label htmlFor="ricorrente">Costo ricorrente</Label>
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCostDialogOpen(false)}>
+            <Button variant="outline" onClick={() => handleCostDialogOpenChange(false)} disabled={submitting}>
               Annulla
             </Button>
-            <Button onClick={() => {
-              addCostItem(costFormData);
-              setIsCostDialogOpen(false);
-              setCostFormData(initialCostFormData);
-            }}>
-              Salva Costo
+            <Button onClick={handleSaveCost} disabled={submitting}>
+              {isEditingCost ? 'Aggiorna Costo' : 'Salva Costo'}
             </Button>
           </DialogFooter>
         </DialogContent>

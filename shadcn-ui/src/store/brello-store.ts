@@ -91,6 +91,14 @@ const buildCostPayload = (cost: Omit<CostItem, 'id' | 'created_at'>): Omit<CostI
   };
 };
 
+const mapCostPayloadToDb = (cost: Omit<CostItem, 'id' | 'created_at'>) => {
+  const { frequenza, ...rest } = cost;
+  return {
+    ...rest,
+    cadenza: frequenza,
+  };
+};
+
 interface BrelloState {
   // Core Data
   clienti: Cliente[];
@@ -521,7 +529,7 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
       const payload = buildCostPayload(costData);
       const { data, error } = await supabase
         .from(TABLES.COSTI)
-        .insert([payload])
+        .insert([mapCostPayloadToDb(payload)])
         .select()
         .single();
 
@@ -548,7 +556,7 @@ export const useBrelloStore = create<BrelloState>((set, get) => ({
 
       const { data, error } = await supabase
         .from(TABLES.COSTI)
-        .update(payload)
+        .update(mapCostPayloadToDb(payload))
         .eq('id', id)
         .select()
         .single();
