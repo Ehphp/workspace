@@ -5,6 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import type { ChartConfig } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+import { PieChart, Pie, Cell, BarChart, Bar, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -84,6 +87,29 @@ const formatFrequenza = (frequenza?: CostFrequenza | null) => {
 
 const getTipoBadgeVariant = (tipo: CostTipo): 'default' | 'secondary' =>
   tipo === 'CAPEX' ? 'secondary' : 'default';
+
+const COSTI_CHART_CONFIG: ChartConfig = {
+  PERSONALE: { label: 'Personale', color: 'hsl(var(--chart-1))' },
+  VEICOLO: { label: 'Veicolo', color: 'hsl(var(--chart-2))' },
+  OMBRELLI: { label: 'Ombrelli', color: 'hsl(var(--chart-3))' },
+  STAZIONI: { label: 'Stazioni', color: 'hsl(var(--chart-4))' },
+  MARKETING: { label: 'Marketing', color: 'hsl(var(--chart-5))' },
+  PERMESSI: { label: 'Permessi/Assicurazioni', color: 'hsl(var(--chart-6))' },
+  PERDITE: { label: 'Perdite', color: 'hsl(var(--chart-7))' },
+  ALTRO: { label: 'Altro', color: 'hsl(var(--chart-8))' },
+};
+
+const CASHFLOW_CHART_CONFIG: ChartConfig = {
+  Entrate: { label: 'Entrate', color: 'hsl(var(--chart-1))' },
+  Uscite: { label: 'Uscite', color: 'hsl(var(--chart-2))' },
+};
+
+const compactCurrencyFormatter = new Intl.NumberFormat('it-IT', {
+  style: 'currency',
+  currency: 'EUR',
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
 
 const MONTH_LABELS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
 
@@ -245,9 +271,11 @@ export default function Cassa() {
     }, {} as Record<string, number>);
 
     costi.forEach((costo) => {
-      const months = parseMesiPagamentoToMonths(costo.mesi_pagamento, costo.frequenza);
-      const monthsToUse = months.length > 0 ? months : FALLBACK_MONTHS_BY_FREQUENZA[costo.frequenza];
-      const occurrences = monthsToUse.length || 1;
+      const frequenza = (costo.frequenza ?? 'ANNUALE') as CostFrequenza;
+      const months = parseMesiPagamentoToMonths(costo.mesi_pagamento, frequenza);
+      const fallbackMonths = FALLBACK_MONTHS_BY_FREQUENZA[frequenza] ?? ['Gen'];
+      const monthsToUse = months.length > 0 ? months : fallbackMonths;
+      const occurrences = monthsToUse.length > 0 ? monthsToUse.length : 1;
       const quota = occurrences > 0 ? costo.importo / occurrences : 0;
 
       monthsToUse.forEach((month) => {
@@ -273,6 +301,22 @@ export default function Cassa() {
     return base;
   }, [mesiLottiAttivi, ricavoPerLotto]);
 
+  const costiCategoriaData = useMemo(() => {
+    const totals = costi.reduce((acc, costo) => {
+      const key = costo.categoria;
+      acc[key] = (acc[key] ?? 0) + costo.importo;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(totals)
+      .filter(([, value]) => value > 0)
+      .map(([categoria, value]) => ({
+        categoria,
+        value,
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [costi]);
+
   const cashflowRows = useMemo(() => {
     let cumulato = 0;
 
@@ -285,6 +329,15 @@ export default function Cassa() {
       return { month, entrate, uscite, saldo, cumulato };
     });
   }, [entrateMensili, usciteMensili]);
+
+  const entrateVsUsciteData = useMemo(() =>
+    cashflowRows.map((row) => ({
+      month: row.month,
+      Entrate: row.entrate,
+      Uscite: row.uscite,
+    })),
+    [cashflowRows]
+  );
 
   const cashflowTotals = useMemo(() => {
     const entrate = cashflowRows.reduce((sum, row) => sum + row.entrate, 0);
@@ -786,6 +839,91 @@ export default function Cassa() {
             </div>
           </CardContent>
         </Card>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Distribuzione costi per categoria</CardTitle>
+              <CardDescription>Quota dei costi annuali per categoria</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[360px]">
+              {costiCategoriaData.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  Nessun costo disponibile
+                </div>
+              ) : (
+                <ChartContainer config={COSTI_CHART_CONFIG} className="h-full">
+                  <PieChart>
+                    <Pie
+                      data={costiCategoriaData}
+                      dataKey="value"
+                      nameKey="categoria"
+                      innerRadius={60}
+                      outerRadius={120}
+                      strokeWidth={8}
+                      paddingAngle={1}
+                      isAnimationActive={false}
+                    >
+                      {costiCategoriaData.map((item) => (
+                        <Cell
+                          key={item.categoria}
+                          name={item.categoria}
+                          fill={`var(--color-${item.categoria})`}
+                        />
+                      ))}
+                    </Pie>
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          formatter={(value) => {
+                            const numericValue = typeof value === 'number' ? value : Number(value ?? 0);
+                            const percentage = totaleImportiCosti > 0 ? ` (${formatPercent(numericValue / totaleImportiCosti)})` : '';
+                            return `${formatCurrency(numericValue)}${percentage}`;
+                          }}
+                        />
+                      }
+                    />
+                    <ChartLegend content={<ChartLegendContent nameKey="categoria" />} />
+                  </PieChart>
+                </ChartContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Entrate vs Uscite per mese</CardTitle>
+              <CardDescription>Confronto mensile del cashflow</CardDescription>
+            </CardHeader>
+            <CardContent className="h-[360px]">
+              <ChartContainer config={CASHFLOW_CHART_CONFIG} className="h-full">
+                <BarChart data={entrateVsUsciteData} margin={{ left: 8, right: 8, top: 16, bottom: 8 }}>
+                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                  <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                  <YAxis
+                    tickFormatter={(value) => compactCurrencyFormatter.format(value as number)}
+                    tickLine={false}
+                    axisLine={false}
+                    width={80}
+                  />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value) => {
+                          const numericValue = typeof value === 'number' ? value : Number(value ?? 0);
+                          return formatCurrency(numericValue);
+                        }}
+                      />
+                    }
+                  />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <Bar dataKey="Entrate" fill="var(--color-Entrate)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Uscite" fill="var(--color-Uscite)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </div>
       </section>
 
       {/* Add Movement Dialog */}
